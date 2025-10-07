@@ -18,3 +18,7 @@ Application familiale pour partager calendriers, tâches et notes.
 - NextAuth pour l'authentification
 - TailwindCSS pour le styling
 - PostgreSQL comme base de données
+
+## Déploiement
+
+Consultez [le guide Cloudflare Pages](docs/deployment/cloudflare-pages.md) pour configurer les commandes de build/déploiement, le token API et les variables d'environnement nécessaires sur votre projet Pages.
