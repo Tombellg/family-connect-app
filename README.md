@@ -1,24 +1,65 @@
-# FamilyConnect App
+﻿# Family Connect
 
-Application familiale pour partager calendriers, tâches et notes.
+Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sans base de données relationnelle.
 
-## Fonctionnalités
+## Aperçu
 
-- Gestion d'espaces familiaux
-- Calendrier partagé pour les événements familiaux
-- Listes de tâches collaboratives
-- Notes en markdown
-- Interface moderne et épurée
+- **Backend** : Express + TypeScript, stockage JSON (via `fs-extra`), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
+- **Frontend** : React + Vite + Tailwind + Framer Motion, interface animée, responsive, et focus productivité.
+- **Données** : import initial des listes/tâches issues de Google Tasks (fournies), visibles par tous les utilisateurs.
 
-## Technologies utilisées
+## Installation
 
-- Next.js pour le frontend et les API routes
-- React pour les composants d'interface
-- Prisma comme ORM pour la base de données
-- NextAuth pour l'authentification
-- TailwindCSS pour le styling
-- PostgreSQL comme base de données
+```bash
+npm install
+npm install --prefix server
+npm install --prefix client
+```
 
-## Déploiement
+## Développement local
 
-Consultez [le guide Cloudflare Pages](docs/deployment/cloudflare-pages.md) pour configurer les commandes de build/déploiement, le token API et les variables d'environnement nécessaires sur votre projet Pages.
+```bash
+npm run dev
+```
+
+- API : http://localhost:4000
+- Frontend : http://localhost:5173 (configure `VITE_API_URL` si besoin)
+
+## Build production
+
+```bash
+npm run build
+```
+
+- `server/dist` : code compilé de l'API
+- `client/dist` : bundle frontend
+
+## Environnement
+
+Variables utiles côté serveur :
+
+- `PORT` (défaut `4000`)
+- `JWT_SECRET`
+- `CORS_ORIGIN` (défaut `http://localhost:5173`)
+- `DATA_DIR` (défaut `data/store.json` relatif à `server/`)
+
+Côté client :
+
+- `VITE_API_URL` (défaut `http://localhost:4000/api`)
+
+## Fonctionnalités clés
+
+- Création/connexion depuis l'UI
+- Session persistée via cookie sécurisé
+- Tableaux partagés avec stats par liste
+- Récurrence ultra modulable (jour/semaine/mois/année, fins configurables)
+- Historique des occurrences terminées
+- Interface réactive, animations, thème glassmorphism
+
+## Prochaines étapes suggérées
+
+- Ajouter des tests unitaires (Vitest côté client, Jest/Supertest côté serveur)
+- Mettre en place ESLint/Prettier et workflows CI
+- Envisager une persistance chiffrée / backups pour `server/data/store.json`
+
+Bon build !
