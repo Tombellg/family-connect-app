@@ -15,6 +15,23 @@ const resolveExpiresIn = (): SignOptions['expiresIn'] => {
   return raw as SignOptions['expiresIn'];
 };
 
+const resolveCorsOrigins = (): string[] => {
+  const raw = process.env.CORS_ORIGIN;
+  if (raw && raw.trim().length > 0) {
+    return raw
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+  }
+
+  return [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+  ];
+};
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: process.env.JWT_SECRET ?? 'local-secret-key',
@@ -22,5 +39,5 @@ export const config = {
   cookieName: 'family_connect_session',
   cookieMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
   dataDir: process.env.DATA_DIR ?? 'data/store.json',
-  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  corsOrigins: resolveCorsOrigins(),
 };

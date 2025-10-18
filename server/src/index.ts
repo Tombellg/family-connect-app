@@ -11,7 +11,28 @@ async function bootstrap() {
 
   const app = express();
 
-  app.use(cors({ origin: config.corsOrigin, credentials: true }));
+  const allowAllOrigins = config.corsOrigins.includes('*');
+
+  app.use(
+    cors({
+      credentials: true,
+      origin(origin, callback) {
+        if (allowAllOrigins) {
+          return callback(null, true);
+        }
+
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (config.corsOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      },
+    })
+  );
   app.use(cookieParser());
   app.use(bodyParser.json());
 
