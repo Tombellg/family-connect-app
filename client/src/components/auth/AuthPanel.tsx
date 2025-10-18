@@ -65,8 +65,9 @@ export default function AuthPanel() {
               value={form.name}
               onChange={handleChange('name')}
               placeholder="Thomas Dupont"
+              autoComplete="name"
               required
-              className="w-full rounded-xl px-4 py-3"
+              className="auth-input"
             />
           </div>
         )}
@@ -77,8 +78,9 @@ export default function AuthPanel() {
             value={form.email}
             onChange={handleChange('email')}
             placeholder="vous@exemple.fr"
+            autoComplete="email"
             required
-            className="w-full rounded-xl px-4 py-3"
+            className="auth-input"
           />
         </div>
         <div className="space-y-2">
@@ -88,9 +90,10 @@ export default function AuthPanel() {
             value={form.password}
             onChange={handleChange('password')}
             placeholder="••••••••"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             minLength={8}
             required
-            className="w-full rounded-xl px-4 py-3"
+            className="auth-input"
           />
         </div>
 

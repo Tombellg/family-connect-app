@@ -44,7 +44,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/auth/login', payload);
       set({ user: response.data.user, loading: false });
     } catch (error: any) {
-      set({ error: error.response?.data?.error ?? 'Impossible de se connecter', loading: false });
+      const fallback = 'Impossible de se connecter';
+      const networkError =
+        error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
+      const message = networkError
+        ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
+        : error.response?.data?.error ?? fallback;
+      set({ error: message, loading: false });
       throw error;
     }
   },
@@ -54,7 +60,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/auth/register', payload);
       set({ user: response.data.user, loading: false });
     } catch (error: any) {
-      set({ error: error.response?.data?.error ?? "Inscription impossible", loading: false });
+      const fallback = 'Inscription impossible';
+      const networkError =
+        error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
+      const message = networkError
+        ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
+        : error.response?.data?.error ?? fallback;
+      set({ error: message, loading: false });
       throw error;
     }
   },
