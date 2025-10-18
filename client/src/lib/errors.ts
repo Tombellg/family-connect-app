@@ -7,6 +7,53 @@ interface ApiErrorPayload {
   requestId?: string;
 }
 
+export interface VerboseErrorContext {
+  status?: number;
+  statusText?: string;
+  method?: string;
+  url?: string;
+  code?: string;
+  responseData?: unknown;
+}
+
+const joinUrl = (baseURL?: string, url?: string): string | undefined => {
+  if (!url && !baseURL) {
+    return undefined;
+  }
+
+  if (!url) {
+    return baseURL;
+  }
+
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  if (!baseURL) {
+    return url;
+  }
+
+  const hasTrailingSlash = baseURL.endsWith('/');
+  const hasLeadingSlash = url.startsWith('/');
+
+  if (hasTrailingSlash && hasLeadingSlash) {
+    return `${baseURL}${url.slice(1)}`;
+  }
+
+  if (!hasTrailingSlash && !hasLeadingSlash) {
+    return `${baseURL}/${url}`;
+  }
+
+  return `${baseURL}${url}`;
+};
+
+const truncate = (value: string, max = 600): string => {
+  if (value.length <= max) {
+    return value;
+  }
+  return `${value.slice(0, Math.max(0, max - 1))}…`;
+};
+
 const stringify = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
     return value;
@@ -47,6 +94,42 @@ const formatDetails = (details: unknown): string | undefined => {
     return formatted.length > 0 ? formatted.join('; ') : undefined;
   }
   return stringify(details);
+};
+
+export const buildVerboseFallback = (fallback: string, context?: VerboseErrorContext): string => {
+  if (!context) {
+    return fallback;
+  }
+
+  const parts: string[] = [fallback];
+
+  if (context.code) {
+    parts.push(`code ${context.code}`);
+  }
+
+  if (typeof context.status === 'number') {
+    const statusText = context.statusText ? ` ${context.statusText}` : '';
+    parts.push(`HTTP ${context.status}${statusText}`.trim());
+  } else if (context.statusText) {
+    parts.push(context.statusText);
+  }
+
+  if (context.method || context.url) {
+    const method = context.method ? context.method.toUpperCase() : undefined;
+    const request = [method, context.url].filter(Boolean).join(' ');
+    if (request) {
+      parts.push(`requête ${request}`);
+    }
+  }
+
+  if (context.responseData !== undefined) {
+    const responseDetails = stringify(context.responseData);
+    if (responseDetails) {
+      parts.push(`réponse: ${truncate(responseDetails)}`);
+    }
+  }
+
+  return parts.join(' — ');
 };
 
 export const extractErrorMessage = (payload: unknown, fallback: string): string => {
@@ -94,4 +177,60 @@ export const extractErrorMessage = (payload: unknown, fallback: string): string 
   }
 
   return parts.join(' — ');
+};
+
+export const extractAxiosErrorContext = (error: any): VerboseErrorContext | undefined => {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const config = 'config' in error && error.config && typeof error.config === 'object' ? error.config : undefined;
+  const response = 'response' in error && error.response && typeof error.response === 'object' ? error.response : undefined;
+
+  const method = config && typeof config.method === 'string' ? config.method : undefined;
+  const baseURL = config && typeof config.baseURL === 'string' ? config.baseURL : undefined;
+  const url = config && typeof config.url === 'string' ? config.url : undefined;
+  const code = typeof (error as any).code === 'string' ? (error as any).code : undefined;
+
+  const status = response && typeof (response as any).status === 'number' ? (response as any).status : undefined;
+  const statusText = response && typeof (response as any).statusText === 'string' ? (response as any).statusText : undefined;
+  const data = response && 'data' in response ? (response as any).data : undefined;
+
+  return {
+    status,
+    statusText,
+    method,
+    url: joinUrl(baseURL, url),
+    code,
+    responseData: data,
+  };
+};
+
+export const extractAxiosErrorPayload = (error: any): unknown => {
+  if (!error || typeof error !== 'object') {
+    return error;
+  }
+
+  const response = 'response' in error && error.response && typeof error.response === 'object' ? error.response : undefined;
+  if (response && 'data' in response) {
+    const data = (response as any).data;
+    if (data && typeof data === 'object' && 'error' in data) {
+      return (data as any).error;
+    }
+    return data;
+  }
+
+  if (typeof (error as any).toJSON === 'function') {
+    try {
+      return (error as any).toJSON();
+    } catch {
+      // ignore
+    }
+  }
+
+  if ('message' in error && typeof (error as any).message === 'string') {
+    return (error as any).message;
+  }
+
+  return error;
 };

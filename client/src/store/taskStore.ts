@@ -1,7 +1,7 @@
 ﻿import queryString from 'query-string';
 import { create } from 'zustand';
 import { api } from '../lib/api';
-import { extractErrorMessage } from '../lib/errors';
+import { buildVerboseFallback, extractAxiosErrorContext, extractAxiosErrorPayload, extractErrorMessage } from '../lib/errors';
 import type { Task, TaskFilters, TaskList, TaskFormInput } from '../types';
 
 interface TaskState {
@@ -57,7 +57,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         set({ activeListId: lists[0].id });
       }
     } catch (error: any) {
-      set({ error: extractErrorMessage(error.response?.data?.error, 'Impossible de charger les listes') });
+      const context = extractAxiosErrorContext(error);
+      const payload = extractAxiosErrorPayload(error);
+      set({ error: extractErrorMessage(payload, buildVerboseFallback('Impossible de charger les listes', context)) });
       throw error;
     }
   },
@@ -89,7 +91,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       );
       set({ tasks, summary, loading: false });
     } catch (error: any) {
-      set({ loading: false, error: extractErrorMessage(error.response?.data?.error, 'Chargement des tâches impossible') });
+      const context = extractAxiosErrorContext(error);
+      const payload = extractAxiosErrorPayload(error);
+      set({
+        loading: false,
+        error: extractErrorMessage(payload, buildVerboseFallback('Chargement des tâches impossible', context)),
+      });
       throw error;
     }
   },
