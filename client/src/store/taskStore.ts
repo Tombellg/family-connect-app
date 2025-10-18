@@ -1,6 +1,7 @@
 ﻿import queryString from 'query-string';
 import { create } from 'zustand';
 import { api } from '../lib/api';
+import { extractErrorMessage } from '../lib/errors';
 import type { Task, TaskFilters, TaskList, TaskFormInput } from '../types';
 
 interface TaskState {
@@ -56,7 +57,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         set({ activeListId: lists[0].id });
       }
     } catch (error: any) {
-      set({ error: error.response?.data?.error ?? 'Impossible de charger les listes' });
+      set({ error: extractErrorMessage(error.response?.data?.error, 'Impossible de charger les listes') });
       throw error;
     }
   },
@@ -88,7 +89,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       );
       set({ tasks, summary, loading: false });
     } catch (error: any) {
-      set({ loading: false, error: error.response?.data?.error ?? 'Chargement des tâches impossible' });
+      set({ loading: false, error: extractErrorMessage(error.response?.data?.error, 'Chargement des tâches impossible') });
       throw error;
     }
   },

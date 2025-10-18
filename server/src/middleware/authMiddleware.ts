@@ -10,7 +10,7 @@ interface AuthTokenPayload {
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies[config.cookieName];
   if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return res.status(401).json({ error: { message: 'Authentication required', code: 'AUTHENTICATION_REQUIRED' } });
   }
 
   try {
@@ -19,6 +19,6 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     next();
   } catch {
     res.clearCookie(config.cookieName, sessionCookieOptions({ maxAge: undefined }));
-    return res.status(401).json({ error: 'Invalid session' });
+    return res.status(401).json({ error: { message: 'Invalid session', code: 'INVALID_SESSION' } });
   }
 }

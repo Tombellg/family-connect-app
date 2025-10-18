@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import { config } from './config';
 import router from './routes';
 import { dataStore } from './storage/dataStore';
+import { serializeError } from './utils/errors';
 
 async function bootstrap() {
   await dataStore.initialize();
@@ -43,8 +44,15 @@ async function bootstrap() {
   app.use('/api', router);
 
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('Unhandled error', err);
-    res.status(500).json({ error: 'Internal server error' });
+    const { status, payload } = serializeError(err);
+    const log = status >= 500 ? console.error : console.warn;
+    log('Request failed', {
+      status,
+      message: err?.message,
+      code: (err && typeof err === 'object' && 'code' in err) ? (err as any).code : undefined,
+      stack: err?.stack,
+    });
+    res.status(status).json(payload);
   });
 
   app.listen(config.port, () => {
