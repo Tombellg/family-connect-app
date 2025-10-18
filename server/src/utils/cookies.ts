@@ -1,11 +1,14 @@
-﻿import { CookieOptions } from 'express';
+import { CookieOptions } from 'express';
 import { config } from '../config';
 
-export function sessionCookieOptions(): CookieOptions {
-  return {
+export function sessionCookieOptions(overrides: Partial<CookieOptions> = {}): CookieOptions {
+  const base: CookieOptions = {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: config.cookieSameSite,
+    secure: config.cookieSecure,
     maxAge: config.cookieMaxAgeMs,
+    path: '/',
   };
+
+  return { ...base, ...overrides };
 }

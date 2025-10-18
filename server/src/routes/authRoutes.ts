@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { loginSchema, registerSchema } from '../validation/taskSchemas';
 import { loginUser, registerUser, getUserProfile } from '../services/authService';
 import { sessionCookieOptions } from '../utils/cookies';
@@ -33,7 +33,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie(config.cookieName, sessionCookieOptions());
+  res.clearCookie(config.cookieName, sessionCookieOptions({ maxAge: undefined }));
   res.json({ success: true });
 });
 

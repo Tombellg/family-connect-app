@@ -1,6 +1,7 @@
-﻿import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
+import { sessionCookieOptions } from '../utils/cookies';
 
 interface AuthTokenPayload {
   userId: string;
@@ -17,7 +18,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     req.userId = payload.userId;
     next();
   } catch {
-    res.clearCookie(config.cookieName, { httpOnly: true, sameSite: 'lax' });
+    res.clearCookie(config.cookieName, sessionCookieOptions({ maxAge: undefined }));
     return res.status(401).json({ error: 'Invalid session' });
   }
 }
