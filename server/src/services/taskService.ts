@@ -1,4 +1,4 @@
-﻿import { nanoid } from 'nanoid';
+import { nanoid } from 'nanoid';
 import { isValid, parseISO } from 'date-fns';
 import { z } from 'zod';
 import { dataStore } from '../storage/dataStore';
@@ -80,7 +80,7 @@ function buildRecurrence(raw: RecurrenceInput, anchorDate: string): Recurrence {
 
 async function ensureList(listId: string | undefined, listTitle: string | undefined): Promise<TaskList> {
   if (listId) {
-    const existing = dataStore.findTaskListById(listId);
+    const existing = await dataStore.findTaskListById(listId);
     if (existing) {
       return existing;
     }
@@ -91,7 +91,7 @@ async function ensureList(listId: string | undefined, listTitle: string | undefi
     throw new Error('Task list is required');
   }
 
-  const lists = dataStore.getTaskLists();
+  const lists = await dataStore.getTaskLists();
   const now = new Date().toISOString();
   const newList: TaskList = {
     id: listId ?? nanoid(10),
@@ -105,17 +105,18 @@ async function ensureList(listId: string | undefined, listTitle: string | undefi
   return newList;
 }
 
-export function getTaskLists(): TaskList[] {
-  const lists = dataStore.getTaskLists();
-  const stats = getTaskCountsByList();
-  return lists.map((list) => ({
+export async function getTaskLists(): Promise<TaskList[]> {
+  const lists = await dataStore.getTaskLists();
+  const stats = await dataStore.getTaskCountsByList();
+  return lists.map((list, index) => ({
     ...list,
+    color: list.color ?? pickListColor(index),
     stats: stats[list.id] ?? { total: 0, open: 0, completed: 0 },
   }));
 }
 
-export function getTasks(filter?: { listId?: string; status?: TaskStatus | 'all' }): Task[] {
-  let tasks = dataStore.getTasks();
+export async function getTasks(filter?: { listId?: string; status?: TaskStatus | 'all' }): Promise<Task[]> {
+  let tasks = await dataStore.getTasks();
   if (filter?.listId) {
     tasks = tasks.filter((task) => task.listId === filter.listId);
   }
@@ -186,7 +187,7 @@ export async function createTask(input: unknown, userId: string): Promise<Task> 
 
 export async function updateTask(taskId: string, input: unknown, userId: string): Promise<Task> {
   const parsed = updateTaskSchema.parse(input);
-  const task = dataStore.findTaskById(taskId);
+  const task = await dataStore.findTaskById(taskId);
   if (!task) {
     throw new Error('Task not found');
   }
@@ -254,12 +255,16 @@ export async function updateTask(taskId: string, input: unknown, userId: string)
 }
 
 export async function toggleTaskCompletion(taskId: string, userId: string): Promise<Task> {
-  const task = dataStore.findTaskById(taskId);
+  const task = await dataStore.findTaskById(taskId);
   if (!task) {
     throw new Error('Task not found');
   }
 
   const now = new Date().toISOString();
+
+  if (!Array.isArray(task.history)) {
+    task.history = [];
+  }
 
   if (task.recurrence) {
     const currentDue = task.dueAt ?? now;
@@ -294,18 +299,6 @@ export async function deleteTask(taskId: string): Promise<void> {
   await dataStore.removeTask(taskId);
 }
 
-export function getTaskCountsByList(): Record<string, { total: number; open: number; completed: number }> {
-  const counts: Record<string, { total: number; open: number; completed: number }> = {};
-  for (const task of dataStore.getTasks()) {
-    if (!counts[task.listId]) {
-      counts[task.listId] = { total: 0, open: 0, completed: 0 };
-    }
-    counts[task.listId].total += 1;
-    if (task.status === 'completed') {
-      counts[task.listId].completed += 1;
-    } else {
-      counts[task.listId].open += 1;
-    }
-  }
-  return counts;
+export async function getTaskCountsByList(): Promise<Record<string, { total: number; open: number; completed: number }>> {
+  return dataStore.getTaskCountsByList();
 }
