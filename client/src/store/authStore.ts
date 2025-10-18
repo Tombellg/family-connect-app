@@ -1,5 +1,6 @@
 ﻿import { create } from 'zustand';
 import { api } from '../lib/api';
+import { extractErrorMessage } from '../lib/errors';
 import type { User } from '../types';
 
 interface AuthCredentials {
@@ -49,7 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
       const message = networkError
         ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
-        : error.response?.data?.error ?? fallback;
+        : extractErrorMessage(error.response?.data?.error, fallback);
       set({ error: message, loading: false });
       throw error;
     }
@@ -65,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
       const message = networkError
         ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
-        : error.response?.data?.error ?? fallback;
+        : extractErrorMessage(error.response?.data?.error, fallback);
       set({ error: message, loading: false });
       throw error;
     }

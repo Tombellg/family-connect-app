@@ -5,13 +5,35 @@ import bodyParser from 'body-parser';
 import { config } from './config';
 import router from './routes';
 import { dataStore } from './storage/dataStore';
+import { serializeError } from './utils/errors';
 
 async function bootstrap() {
   await dataStore.initialize();
 
   const app = express();
 
-  app.use(cors({ origin: config.corsOrigin, credentials: true }));
+  const allowAllOrigins = config.corsOrigins.includes('*');
+
+  app.use(
+    cors({
+      credentials: true,
+      origin(origin, callback) {
+        if (allowAllOrigins) {
+          return callback(null, true);
+        }
+
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (config.corsOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      },
+    })
+  );
   app.use(cookieParser());
   app.use(bodyParser.json());
 
@@ -22,8 +44,15 @@ async function bootstrap() {
   app.use('/api', router);
 
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('Unhandled error', err);
-    res.status(500).json({ error: 'Internal server error' });
+    const { status, payload } = serializeError(err);
+    const log = status >= 500 ? console.error : console.warn;
+    log('Request failed', {
+      status,
+      message: err?.message,
+      code: (err && typeof err === 'object' && 'code' in err) ? (err as any).code : undefined,
+      stack: err?.stack,
+    });
+    res.status(status).json(payload);
   });
 
   app.listen(config.port, () => {
