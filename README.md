@@ -41,6 +41,8 @@ Variables utiles côté serveur :
 - `PORT` (défaut `4000`)
 - `JWT_SECRET`
 - `CORS_ORIGIN` (défaut `http://localhost:5173`)
+- `COOKIE_SAME_SITE` (`lax`, `strict` ou `none` — défaut `lax` en dev, `none` en prod)
+- `COOKIE_SECURE` (`true`/`false` — défaut `true` en prod)
 - `DATA_DIR` (défaut `data/store.json` relatif à `server/`)
 
 Côté client :
