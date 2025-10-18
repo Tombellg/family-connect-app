@@ -32,7 +32,16 @@ export async function registerUser(name: string, email: string, password: string
     updatedAt: now,
     avatarColor: randomColor(name),
   };
-  await dataStore.saveUser(user);
+  try {
+    await dataStore.saveUser(user);
+  } catch (error) {
+    throw new AppError('Failed to persist newly created user', {
+      status: 500,
+      code: 'USER_PERSISTENCE_ERROR',
+      details: { email },
+      cause: error,
+    });
+  }
   const token = issueToken(user.id);
   return { user: toPublicUser(user), token };
 }
@@ -60,7 +69,16 @@ export async function loginUser(email: string, password: string): Promise<{ user
 
 export function issueToken(userId: string): string {
   const payload: AuthTokenPayload = { userId };
-  return jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
+  try {
+    return jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
+  } catch (error) {
+    throw new AppError('Failed to sign authentication token', {
+      status: 500,
+      code: 'TOKEN_SIGN_ERROR',
+      details: { userId },
+      cause: error,
+    });
+  }
 }
 
 function randomColor(seed: string): string {

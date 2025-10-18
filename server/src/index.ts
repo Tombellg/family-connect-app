@@ -6,6 +6,7 @@ import { config } from './config';
 import router from './routes';
 import { dataStore } from './storage/dataStore';
 import { serializeError } from './utils/errors';
+import { requestContext } from './middleware/requestContext';
 
 async function bootstrap() {
   await dataStore.initialize();
@@ -13,6 +14,8 @@ async function bootstrap() {
   const app = express();
 
   const allowAllOrigins = config.corsOrigins.includes('*');
+
+  app.use(requestContext);
 
   app.use(
     cors({
@@ -43,13 +46,16 @@ async function bootstrap() {
 
   app.use('/api', router);
 
-  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const { status, payload } = serializeError(err);
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const requestId = req.requestId;
+    const { status, payload } = serializeError(err, { requestId });
     const log = status >= 500 ? console.error : console.warn;
     log('Request failed', {
+      requestId,
       status,
       message: err?.message,
       code: (err && typeof err === 'object' && 'code' in err) ? (err as any).code : undefined,
+      details: payload.error.details,
       stack: err?.stack,
     });
     res.status(status).json(payload);

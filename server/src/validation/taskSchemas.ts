@@ -1,8 +1,19 @@
 ﻿import { z } from 'zod';
 
-export const emailSchema = z.string().email();
-export const passwordSchema = z.string().min(8);
-export const nameSchema = z.string().min(1).max(100);
+export const emailSchema = z
+  .string()
+  .trim()
+  .min(1, 'Adresse e-mail manquante')
+  .email('Adresse e-mail invalide');
+export const passwordSchema = z
+  .string()
+  .min(1, 'Mot de passe manquant')
+  .min(8, 'Le mot de passe doit contenir au moins 8 caractères.');
+export const nameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Le nom est requis.')
+  .max(100, 'Le nom ne peut pas dépasser 100 caractères.');
 
 export const registerSchema = z.object({
   name: nameSchema,

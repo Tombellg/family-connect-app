@@ -2,6 +2,9 @@ interface ApiErrorPayload {
   message?: string;
   code?: string;
   details?: unknown;
+  status?: number;
+  timestamp?: string;
+  requestId?: string;
 }
 
 const stringify = (value: unknown): string | undefined => {
@@ -55,20 +58,35 @@ export const extractErrorMessage = (payload: unknown, fallback: string): string 
     return payload;
   }
 
-  const { message, code, details } = payload as ApiErrorPayload;
+  const { message, code, details, status, timestamp, requestId } = payload as ApiErrorPayload;
   const parts: string[] = [];
+
+  if (code) {
+    parts.push(`[${code}]`);
+  }
 
   if (message) {
     parts.push(message);
   }
 
-  if (code && !message) {
-    parts.push(code);
-  }
-
   const detailMessage = formatDetails(details);
   if (detailMessage) {
     parts.push(detailMessage);
+  }
+
+  const meta: string[] = [];
+  if (typeof status === 'number') {
+    meta.push(`statut ${status}`);
+  }
+  if (requestId) {
+    meta.push(`requête ${requestId}`);
+  }
+  if (timestamp) {
+    meta.push(`horodatage ${timestamp}`);
+  }
+
+  if (meta.length > 0) {
+    parts.push(`(${meta.join(', ')})`);
   }
 
   if (parts.length === 0) {
