@@ -1,6 +1,6 @@
 ﻿import { create } from 'zustand';
 import { api } from '../lib/api';
-import { extractErrorMessage } from '../lib/errors';
+import { buildVerboseFallback, extractAxiosErrorContext, extractAxiosErrorPayload, extractErrorMessage } from '../lib/errors';
 import type { User } from '../types';
 
 interface AuthCredentials {
@@ -48,9 +48,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const fallback = 'Impossible de se connecter';
       const networkError =
         error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
+      const context = extractAxiosErrorContext(error);
+      const payload = extractAxiosErrorPayload(error);
       const message = networkError
         ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
-        : extractErrorMessage(error.response?.data?.error, fallback);
+        : extractErrorMessage(payload, buildVerboseFallback(fallback, context));
       set({ error: message, loading: false });
       throw error;
     }
@@ -64,9 +66,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const fallback = 'Inscription impossible';
       const networkError =
         error.code === 'ECONNABORTED' || error.message === 'Network Error' || (!!error.request && !error.response);
+      const context = extractAxiosErrorContext(error);
+      const payload = extractAxiosErrorPayload(error);
       const message = networkError
         ? 'Serveur injoignable. Vérifiez votre connexion ou réessayez dans un instant.'
-        : extractErrorMessage(error.response?.data?.error, fallback);
+        : extractErrorMessage(payload, buildVerboseFallback(fallback, context));
       set({ error: message, loading: false });
       throw error;
     }
