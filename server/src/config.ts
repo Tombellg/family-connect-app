@@ -59,14 +59,56 @@ const resolveCookieSecure = (): boolean => {
   return process.env.NODE_ENV === 'production';
 };
 
+const pickEnv = (...keys: string[]): string | undefined => {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return undefined;
+};
+
+const resolveDbSsl = (): boolean => {
+  const raw = pickEnv('NETLIFY_DB_SSLMODE', 'PGSSLMODE', 'DB_SSL');
+  if (!raw) {
+    return true;
+  }
+
+  const normalized = raw.toLowerCase();
+  if (['disable', 'off', 'false', '0', 'no'].includes(normalized)) {
+    return false;
+  }
+  return true;
+};
+
+const resolveDatabaseConfig = () => {
+  const connectionString = pickEnv('NETLIFY_DB_CONNECTION_STRING', 'DATABASE_URL');
+  const host = pickEnv('NETLIFY_DB_HOST', 'PGHOST');
+  const port = pickEnv('NETLIFY_DB_PORT', 'PGPORT');
+  const database = pickEnv('NETLIFY_DB_DATABASE', 'NETLIFY_DB_NAME', 'PGDATABASE');
+  const user = pickEnv('NETLIFY_DB_USERNAME', 'NETLIFY_DB_USER', 'PGUSER');
+  const password = pickEnv('NETLIFY_DB_PASSWORD', 'PGPASSWORD');
+
+  return {
+    connectionString,
+    host,
+    port: port ? Number(port) : undefined,
+    database,
+    user,
+    password,
+    ssl: resolveDbSsl(),
+  };
+};
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: process.env.JWT_SECRET ?? 'local-secret-key',
   jwtExpiresIn: resolveExpiresIn(),
   cookieName: 'family_connect_session',
   cookieMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
-  dataDir: process.env.DATA_DIR ?? 'data/store.json',
   corsOrigins: resolveCorsOrigins(),
   cookieSameSite: resolveCookieSameSite(),
   cookieSecure: resolveCookieSecure(),
+  database: resolveDatabaseConfig(),
 };

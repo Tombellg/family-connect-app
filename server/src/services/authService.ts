@@ -1,4 +1,4 @@
-﻿import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { config } from '../config';
@@ -11,8 +11,12 @@ interface AuthTokenPayload {
   userId: string;
 }
 
-export async function registerUser(name: string, email: string, password: string): Promise<{ user: PublicUser; token: string; }> {
-  const existing = dataStore.findUserByEmail(email);
+export async function registerUser(
+  name: string,
+  email: string,
+  password: string
+): Promise<{ user: PublicUser; token: string }> {
+  const existing = await dataStore.findUserByEmail(email);
   if (existing) {
     throw new AppError('Email already registered', {
       status: 409,
@@ -32,6 +36,7 @@ export async function registerUser(name: string, email: string, password: string
     updatedAt: now,
     avatarColor: randomColor(name),
   };
+
   try {
     await dataStore.saveUser(user);
   } catch (error) {
@@ -42,12 +47,13 @@ export async function registerUser(name: string, email: string, password: string
       cause: error,
     });
   }
+
   const token = issueToken(user.id);
   return { user: toPublicUser(user), token };
 }
 
-export async function loginUser(email: string, password: string): Promise<{ user: PublicUser; token: string; }> {
-  const user = dataStore.findUserByEmail(email);
+export async function loginUser(email: string, password: string): Promise<{ user: PublicUser; token: string }> {
+  const user = await dataStore.findUserByEmail(email);
   if (!user) {
     throw new AppError('Invalid credentials', {
       status: 401,
@@ -55,6 +61,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
       details: { email },
     });
   }
+
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
     throw new AppError('Invalid credentials', {
@@ -63,6 +70,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
       details: { email },
     });
   }
+
   const token = issueToken(user.id);
   return { user: toPublicUser(user), token };
 }
@@ -90,8 +98,8 @@ function randomColor(seed: string): string {
   return palette[index % palette.length];
 }
 
-export function getUserProfile(userId: string): PublicUser {
-  const user = dataStore.findUserById(userId);
+export async function getUserProfile(userId: string): Promise<PublicUser> {
+  const user = await dataStore.findUserById(userId);
   if (!user) {
     throw new AppError('User not found', {
       status: 404,

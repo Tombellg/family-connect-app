@@ -38,7 +38,7 @@ router.post('/logout', (req, res) => {
   res.json({ success: true });
 });
 
-router.get('/me', authMiddleware, (req, res, next: NextFunction) => {
+router.get('/me', authMiddleware, async (req, res, next: NextFunction) => {
   try {
     if (!req.userId) {
       throw new AppError('Not authenticated', {
@@ -46,7 +46,7 @@ router.get('/me', authMiddleware, (req, res, next: NextFunction) => {
         code: 'AUTHENTICATION_REQUIRED',
       });
     }
-    const user = getUserProfile(req.userId);
+    const user = await getUserProfile(req.userId);
     res.json({ user });
   } catch (error) {
     next(error);
