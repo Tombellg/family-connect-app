@@ -102,7 +102,7 @@ export interface Task {
   dueAt?: string;
   status: TaskStatus;
   completedAt?: string;
-  createdBy: string;
+  createdBy?: string;
   assignedTo?: string;
   recurrence?: Recurrence;
   history: TaskHistoryEntry[];
@@ -123,6 +123,10 @@ export interface TaskList {
   };
 }
 
+export type UserRole = 'user' | 'admin';
+
+export type UserStatus = 'active' | 'pending' | 'suspended';
+
 export interface User {
   id: string;
   name: string;
@@ -130,6 +134,9 @@ export interface User {
   avatarColor?: string;
   createdAt: string;
   updatedAt: string;
+  role: UserRole;
+  status: UserStatus;
+  lastLoginAt?: string;
 }
 
 export interface TaskFilters {

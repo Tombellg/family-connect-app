@@ -9,6 +9,9 @@ interface UserRow {
   email: string;
   password_hash: string;
   avatar_color: string | null;
+  role: string | null;
+  status: string | null;
+  last_login_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -33,7 +36,7 @@ interface TaskRow {
   due_at: string | Date | null;
   status: TaskStatus;
   completed_at: string | Date | null;
-  created_by: string;
+  created_by: string | null;
   assigned_to: string | null;
   recurrence: any;
   history: TaskHistoryEntry[] | string | null;
@@ -90,6 +93,9 @@ export class DataStore {
         email TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         avatar_color TEXT,
+        role TEXT NOT NULL DEFAULT 'user',
+        status TEXT NOT NULL DEFAULT 'active',
+        last_login_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL
       );
@@ -97,6 +103,21 @@ export class DataStore {
 
     await this.pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users ((LOWER(email)));
+    `);
+
+    await this.pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
+    `);
+
+    await this.pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+    `);
+
+    await this.pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
     `);
 
     await this.pool.query(`
@@ -122,12 +143,17 @@ export class DataStore {
         due_at TIMESTAMPTZ,
         status TEXT NOT NULL,
         completed_at TIMESTAMPTZ,
-        created_by TEXT NOT NULL REFERENCES users (id) ON DELETE SET NULL,
+        created_by TEXT REFERENCES users (id) ON DELETE SET NULL,
         assigned_to TEXT REFERENCES users (id) ON DELETE SET NULL,
         recurrence JSONB,
         history JSONB NOT NULL DEFAULT '[]'::jsonb,
         starred BOOLEAN DEFAULT FALSE
       );
+    `);
+
+    await this.pool.query(`
+      ALTER TABLE tasks
+      ALTER COLUMN created_by DROP NOT NULL;
     `);
 
     await this.pool.query(`
@@ -154,9 +180,21 @@ export class DataStore {
 
       for (const user of seed.users) {
         await client.query(
-          `INSERT INTO users (id, name, email, password_hash, avatar_color, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [user.id, user.name, user.email, user.passwordHash, user.avatarColor ?? null, user.createdAt, user.updatedAt]
+          `INSERT INTO users (
+            id, name, email, password_hash, avatar_color, role, status, last_login_at, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            user.id,
+            user.name,
+            user.email,
+            user.passwordHash,
+            user.avatarColor ?? null,
+            user.role,
+            user.status,
+            user.lastLoginAt ?? null,
+            user.createdAt,
+            user.updatedAt,
+          ]
         );
       }
 
@@ -229,17 +267,61 @@ export class DataStore {
 
   async saveUser(user: User): Promise<void> {
     await this.pool.query(
-      `INSERT INTO users (id, name, email, password_hash, avatar_color, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (id) DO UPDATE SET
-         name = EXCLUDED.name,
-         email = EXCLUDED.email,
-         password_hash = EXCLUDED.password_hash,
-         avatar_color = EXCLUDED.avatar_color,
-         updated_at = EXCLUDED.updated_at`
-        ,
-      [user.id, user.name, user.email, user.passwordHash, user.avatarColor ?? null, user.createdAt, user.updatedAt]
+      `INSERT INTO users (
+        id, name, email, password_hash, avatar_color, role, status, last_login_at, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        email = EXCLUDED.email,
+        password_hash = EXCLUDED.password_hash,
+        avatar_color = EXCLUDED.avatar_color,
+        role = EXCLUDED.role,
+        status = EXCLUDED.status,
+        last_login_at = EXCLUDED.last_login_at,
+        updated_at = EXCLUDED.updated_at`,
+      [
+        user.id,
+        user.name,
+        user.email,
+        user.passwordHash,
+        user.avatarColor ?? null,
+        user.role,
+        user.status,
+        user.lastLoginAt ?? null,
+        user.createdAt,
+        user.updatedAt,
+      ]
     );
+  }
+
+  async updateUserLastLogin(userId: string, timestamp: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE users
+         SET last_login_at = $2,
+             updated_at = $2
+       WHERE id = $1`,
+      [userId, timestamp]
+    );
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.pool.query('DELETE FROM users WHERE id = $1', [userId]);
+  }
+
+  async countAdmins(excludeUserId?: string): Promise<number> {
+    if (excludeUserId) {
+      const { rows } = await this.pool.query<{ count: string }>(
+        'SELECT COUNT(*) AS count FROM users WHERE role = $1 AND id <> $2',
+        ['admin', excludeUserId]
+      );
+      return Number(rows[0]?.count ?? 0);
+    }
+
+    const { rows } = await this.pool.query<{ count: string }>(
+      'SELECT COUNT(*) AS count FROM users WHERE role = $1',
+      ['admin']
+    );
+    return Number(rows[0]?.count ?? 0);
   }
 
   async getTaskLists(): Promise<TaskList[]> {
@@ -303,6 +385,7 @@ export class DataStore {
         due_at = EXCLUDED.due_at,
         status = EXCLUDED.status,
         completed_at = EXCLUDED.completed_at,
+        created_by = EXCLUDED.created_by,
         assigned_to = EXCLUDED.assigned_to,
         recurrence = EXCLUDED.recurrence,
         history = EXCLUDED.history,
@@ -318,7 +401,7 @@ export class DataStore {
         task.dueAt ?? null,
         task.status,
         task.completedAt ?? null,
-        task.createdBy,
+        task.createdBy ?? null,
         task.assignedTo ?? null,
         task.recurrence ? JSON.stringify(task.recurrence) : null,
         JSON.stringify(task.history ?? []),
@@ -359,6 +442,9 @@ export class DataStore {
       avatarColor: row.avatar_color ?? undefined,
       createdAt: mapTimestamp(row.created_at)!,
       updatedAt: mapTimestamp(row.updated_at)!,
+      role: (row.role ?? 'user') as User['role'],
+      status: (row.status ?? 'active') as User['status'],
+      lastLoginAt: mapTimestamp(row.last_login_at),
     };
   }
 
@@ -397,7 +483,7 @@ export class DataStore {
       dueAt: mapTimestamp(row.due_at),
       status: row.status as TaskStatus,
       completedAt: mapTimestamp(row.completed_at),
-      createdBy: row.created_by,
+      createdBy: row.created_by ?? undefined,
       assignedTo: row.assigned_to ?? undefined,
       recurrence,
       history,

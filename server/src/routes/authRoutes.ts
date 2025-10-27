@@ -1,5 +1,5 @@
 import { NextFunction, Router } from 'express';
-import { loginSchema, registerSchema } from '../validation/taskSchemas';
+import { loginSchema, registerSchema } from '../validation/userSchemas';
 import { loginUser, registerUser, getUserProfile } from '../services/authService';
 import { sessionCookieOptions } from '../utils/cookies';
 import { authMiddleware } from '../middleware/authMiddleware';
@@ -46,7 +46,7 @@ router.get('/me', authMiddleware, async (req, res, next: NextFunction) => {
         code: 'AUTHENTICATION_REQUIRED',
       });
     }
-    const user = await getUserProfile(req.userId);
+    const user = req.authUser ?? (await getUserProfile(req.userId));
     res.json({ user });
   } catch (error) {
     next(error);

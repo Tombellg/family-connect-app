@@ -6,6 +6,7 @@ import { dataStore } from '../storage/dataStore';
 import { PublicUser, toPublicUser } from '../utils/sanitize';
 import { User } from '../types';
 import { AppError } from '../utils/errors';
+import { generateAvatarColor } from '../utils/avatar';
 
 interface AuthTokenPayload {
   userId: string;
@@ -34,7 +35,10 @@ export async function registerUser(
     passwordHash,
     createdAt: now,
     updatedAt: now,
-    avatarColor: randomColor(name),
+    avatarColor: generateAvatarColor(name),
+    role: 'user',
+    status: 'active',
+    lastLoginAt: now,
   };
 
   try {
@@ -71,8 +75,18 @@ export async function loginUser(email: string, password: string): Promise<{ user
     });
   }
 
+  if (user.status !== 'active') {
+    throw new AppError('Account is not active', {
+      status: 403,
+      code: 'ACCOUNT_INACTIVE',
+      details: { status: user.status },
+    });
+  }
+
   const token = issueToken(user.id);
-  return { user: toPublicUser(user), token };
+  const loginAt = new Date().toISOString();
+  await dataStore.updateUserLastLogin(user.id, loginAt);
+  return { user: toPublicUser({ ...user, lastLoginAt: loginAt, updatedAt: loginAt }), token };
 }
 
 export function issueToken(userId: string): string {
@@ -87,15 +101,6 @@ export function issueToken(userId: string): string {
       cause: error,
     });
   }
-}
-
-function randomColor(seed: string): string {
-  const palette = ['#6366f1', '#f97316', '#22d3ee', '#facc15', '#34d399'];
-  const index = seed
-    .split('')
-    .map((char) => char.charCodeAt(0))
-    .reduce((acc, code) => acc + code, 0);
-  return palette[index % palette.length];
 }
 
 export async function getUserProfile(userId: string): Promise<PublicUser> {

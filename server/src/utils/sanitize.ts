@@ -1,4 +1,4 @@
-﻿import type { Task, TaskList, User } from '../types';
+import type { Task, TaskList, User, UserRole, UserStatus } from '../types';
 
 export interface PublicUser {
   id: string;
@@ -7,6 +7,9 @@ export interface PublicUser {
   avatarColor?: string;
   createdAt: string;
   updatedAt: string;
+  role: UserRole;
+  status: UserStatus;
+  lastLoginAt?: string;
 }
 
 export function toPublicUser(user: User): PublicUser {
