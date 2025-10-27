@@ -1,11 +1,16 @@
-import { NextFunction, Request, Response } from 'express';
-import { nanoid } from 'nanoid';
+import { randomUUID } from 'crypto';
+import type { Request, Response, NextFunction } from 'express';
 
-export function requestContext(req: Request, res: Response, next: NextFunction): void {
-  if (!req.requestId) {
-    const id = nanoid(12);
-    req.requestId = id;
-    res.locals.requestId = id;
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+      userId?: string;
+    }
   }
-  next();
 }
+
+export const requestContext = (req: Request, _res: Response, next: NextFunction): void => {
+  req.requestId = req.headers['x-request-id']?.toString() ?? randomUUID();
+  next();
+};

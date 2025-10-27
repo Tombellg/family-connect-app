@@ -13,7 +13,7 @@ export default function AuthPage() {
           className="text-center mb-10 max-w-2xl"
         >
           <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.3em] text-slate-300">
-            Family Connect · Tâches partagées
+            Reynard · Tâches partagées
           </p>
           <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             Organisez votre foyer avec une fluidité irrésistible

@@ -1,12 +1,12 @@
-﻿# Family Connect
+# Reynard
 
-Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sur Netlify DB (PostgreSQL).
+Application web de gestion de tâches partagées pour le foyer, propulsée par un backend Express intégralement réécrit et connecté à PostgreSQL Neon.
 
 ## Aperçu
 
-- **Backend** : Express + TypeScript, stockage PostgreSQL (Netlify DB/Neon), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
-- **Frontend** : React + Vite + Tailwind + Framer Motion, interface animée, responsive, et focus productivité.
-- **Données** : import initial des listes/tâches issues de Google Tasks (fournies), visibles par tous les utilisateurs.
+- **Backend** : Express 5 + TypeScript, connexion PostgreSQL gérée par `pg`, sécurisation via `helmet`, compression HTTP, authentification JWT stockée en cookie HTTPOnly.
+- **Frontend** : React + Vite + Tailwind + Framer Motion pour une interface fluide et responsive.
+- **Données** : un semis initial crée un foyer type (utilisateur, listes et tâches) directement dans la base Neon si elle est vide.
 
 ## Installation
 
@@ -23,7 +23,7 @@ npm run dev
 ```
 
 - API : http://localhost:4000
-- Frontend : http://localhost:5173 (configure `VITE_API_URL` si besoin)
+- Frontend : http://localhost:5173 (configurer `VITE_API_URL` si besoin)
 
 ## Build production
 
@@ -34,36 +34,38 @@ npm run build
 - `server/dist` : code compilé de l'API
 - `client/dist` : bundle frontend
 
-## Environnement
+## Configuration de l'environnement
 
-Variables utiles côté serveur :
+Le backend est prêt à dialoguer avec l'instance Neon fournie. Par défaut, il charge les valeurs suivantes :
+
+```
+DATABASE_URL=postgresql://neondb_owner:npg_MpQBUN7bFzl6@ep-shy-dream-abcslgpk-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://neondb_owner:npg_MpQBUN7bFzl6@ep-shy-dream-abcslgpk.eu-west-2.aws.neon.tech/neondb?sslmode=require
+PGHOST=ep-shy-dream-abcslgpk-pooler.eu-west-2.aws.neon.tech
+PGHOST_UNPOOLED=ep-shy-dream-abcslgpk.eu-west-2.aws.neon.tech
+PGUSER=neondb_owner
+PGPASSWORD=npg_MpQBUN7bFzl6
+PGDATABASE=neondb
+```
+
+Vous pouvez surcharger chaque valeur via des variables d'environnement ou un fichier `.env` à la racine du dossier `server/`.
+
+Autres variables utiles côté serveur :
 
 - `PORT` (défaut `4000`)
 - `JWT_SECRET`
-- `CORS_ORIGIN` (défaut `http://localhost:5173`)
-- `COOKIE_SAME_SITE` (`lax`, `strict` ou `none` — défaut `lax` en dev, `none` en prod)
-- `COOKIE_SECURE` (`true`/`false` — défaut `true` en prod)
-- Connexion base : `NETLIFY_DB_CONNECTION_STRING` **ou** couples `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` (Netlify renseigne automatiquement les variables `NETLIFY_DB_*`).
-- `NETLIFY_DB_SSLMODE` / `PGSSLMODE` (facultatif, `require` activé par défaut)
-- `netlify/db/setup.sql` provisionne les tables lors du build Netlify DB
+- `CORS_ORIGINS` (liste séparée par des virgules, défaut `*`)
+- `COOKIE_NAME` (nom du cookie de session, défaut `reynard_session`)
 
 Côté client :
 
 - `VITE_API_URL` (défaut `http://localhost:4000/api`)
 
-## Fonctionnalités clés
+## Fonctionnalités clés du backend
 
-- Création/connexion depuis l'UI
-- Session persistée via cookie sécurisé
-- Tableaux partagés avec stats par liste
-- Récurrence ultra modulable (jour/semaine/mois/année, fins configurables)
-- Historique des occurrences terminées
-- Interface réactive, animations, thème glassmorphism
-
-## Prochaines étapes suggérées
-
-- Ajouter des tests unitaires (Vitest côté client, Jest/Supertest côté serveur)
-- Mettre en place ESLint/Prettier et workflows CI
-- Sécuriser la base (sauvegardes, rotation des secrets Netlify DB)
+- Authentification complète (inscription, connexion, déconnexion, profil) avec hachage `bcrypt` et jetons JWT.
+- Middleware d'authentification, sécurisation par `helmet`, compression automatique et gestion des erreurs centralisée.
+- Gestion des listes et tâches (création, lecture, mise à jour, bascule d'état, suppression) directement en base Neon.
+- Migrations SQL exécutées au démarrage et semis automatique des données si la base est vide.
 
 Bon build !
