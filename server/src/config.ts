@@ -70,7 +70,7 @@ const pickEnv = (...keys: string[]): string | undefined => {
 };
 
 const resolveDbSsl = (): boolean => {
-  const raw = pickEnv('NETLIFY_DB_SSLMODE', 'PGSSLMODE', 'DB_SSL');
+  const raw = pickEnv('NETLIFY_DB_SSLMODE', 'POSTGRES_SSLMODE', 'PGSSLMODE', 'DB_SSL');
   if (!raw) {
     return true;
   }
@@ -83,21 +83,41 @@ const resolveDbSsl = (): boolean => {
 };
 
 const resolveDatabaseConfig = () => {
-  const connectionString = pickEnv('NETLIFY_DB_CONNECTION_STRING', 'DATABASE_URL');
-  const host = pickEnv('NETLIFY_DB_HOST', 'PGHOST');
-  const port = pickEnv('NETLIFY_DB_PORT', 'PGPORT');
-  const database = pickEnv('NETLIFY_DB_DATABASE', 'NETLIFY_DB_NAME', 'PGDATABASE');
-  const user = pickEnv('NETLIFY_DB_USERNAME', 'NETLIFY_DB_USER', 'PGUSER');
-  const password = pickEnv('NETLIFY_DB_PASSWORD', 'PGPASSWORD');
+  const connectionString = pickEnv(
+    'DATABASE_URL',
+    'POSTGRES_URL',
+    'NETLIFY_DB_CONNECTION_STRING'
+  );
+  const unpooledConnectionString = pickEnv(
+    'DATABASE_URL_UNPOOLED',
+    'POSTGRES_URL_NON_POOLING',
+    'NETLIFY_DB_DIRECT_URL'
+  );
+  const host = pickEnv('PGHOST', 'POSTGRES_HOST', 'NETLIFY_DB_HOST');
+  const port = pickEnv('PGPORT', 'POSTGRES_PORT', 'NETLIFY_DB_PORT');
+  const database = pickEnv('PGDATABASE', 'POSTGRES_DATABASE', 'NETLIFY_DB_DATABASE', 'NETLIFY_DB_NAME');
+  const user = pickEnv('PGUSER', 'POSTGRES_USER', 'NETLIFY_DB_USERNAME', 'NETLIFY_DB_USER');
+  const password = pickEnv('PGPASSWORD', 'POSTGRES_PASSWORD', 'NETLIFY_DB_PASSWORD');
+  const applicationName = pickEnv('PGAPPNAME', 'POSTGRES_APP_NAME') ?? 'reynard-api';
+  const poolMax = pickEnv('PGPOOL_MAX', 'POSTGRES_POOL_MAX');
+  const poolMin = pickEnv('PGPOOL_MIN', 'POSTGRES_POOL_MIN');
+  const idleTimeoutMs = pickEnv('PGPOOL_IDLE_TIMEOUT_MS', 'POSTGRES_POOL_IDLE_TIMEOUT_MS');
+  const connectionTimeoutMs = pickEnv('PGPOOL_CONNECTION_TIMEOUT_MS', 'POSTGRES_POOL_CONNECTION_TIMEOUT_MS');
 
   return {
     connectionString,
+    unpooledConnectionString,
     host,
     port: port ? Number(port) : undefined,
     database,
     user,
     password,
     ssl: resolveDbSsl(),
+    applicationName,
+    poolMax: poolMax ? Number(poolMax) : undefined,
+    poolMin: poolMin ? Number(poolMin) : undefined,
+    idleTimeoutMs: idleTimeoutMs ? Number(idleTimeoutMs) : undefined,
+    connectionTimeoutMs: connectionTimeoutMs ? Number(connectionTimeoutMs) : undefined,
   };
 };
 
@@ -105,7 +125,7 @@ export const config = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: process.env.JWT_SECRET ?? 'local-secret-key',
   jwtExpiresIn: resolveExpiresIn(),
-  cookieName: 'family_connect_session',
+  cookieName: 'reynard_session',
   cookieMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
   corsOrigins: resolveCorsOrigins(),
   cookieSameSite: resolveCookieSameSite(),

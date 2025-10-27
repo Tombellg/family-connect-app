@@ -1,4 +1,5 @@
-import { Pool } from 'pg';
+import { Client, Pool } from 'pg';
+import type { PoolConfig } from 'pg';
 import { buildDefaultStore } from '../seed/buildDefaultStore';
 import { config } from '../config';
 import { Task, TaskHistoryEntry, TaskList, TaskStatus, User } from '../types';
@@ -57,24 +58,68 @@ const mapTimestamp = (value: string | Date | null | undefined): string | undefin
 
 export class DataStore {
   private pool: Pool;
+  private readonly db = config.database;
 
   constructor() {
-    const db = config.database;
-    if (!db.connectionString && !db.host) {
+    if (!this.db.connectionString && !this.db.host) {
       throw new Error(
-        'Database connection is not configured. Set NETLIFY_DB_CONNECTION_STRING or PGHOST/PGDATABASE/PGUSER/PGPASSWORD.'
+        'Database connection is not configured. Set DATABASE_URL/POSTGRES_URL or PGHOST/PGDATABASE/PGUSER/PGPASSWORD.'
       );
     }
 
-    this.pool = new Pool({
-      connectionString: db.connectionString,
-      host: db.connectionString ? undefined : db.host,
-      port: db.connectionString ? undefined : db.port,
-      database: db.connectionString ? undefined : db.database,
-      user: db.connectionString ? undefined : db.user,
-      password: db.connectionString ? undefined : db.password,
-      ssl: db.ssl ? { rejectUnauthorized: false } : undefined,
-    });
+    this.pool = new Pool(this.buildConnectionConfig());
+  }
+
+  private buildConnectionConfig(useUnpooled = false): PoolConfig {
+    const connectionString =
+      useUnpooled && this.db.unpooledConnectionString
+        ? this.db.unpooledConnectionString
+        : this.db.connectionString;
+
+    const connectionConfig: PoolConfig = {};
+
+    if (connectionString) {
+      connectionConfig.connectionString = connectionString;
+    } else {
+      if (this.db.host) {
+        connectionConfig.host = this.db.host;
+      }
+      if (this.db.port) {
+        connectionConfig.port = this.db.port;
+      }
+      if (this.db.database) {
+        connectionConfig.database = this.db.database;
+      }
+      if (this.db.user) {
+        connectionConfig.user = this.db.user;
+      }
+      if (this.db.password) {
+        connectionConfig.password = this.db.password;
+      }
+    }
+
+    if (this.db.ssl) {
+      connectionConfig.ssl = { rejectUnauthorized: false };
+    }
+    if (this.db.applicationName) {
+      connectionConfig.application_name = this.db.applicationName;
+    }
+    if (!useUnpooled) {
+      if (this.db.poolMax) {
+        connectionConfig.max = this.db.poolMax;
+      }
+      if (this.db.poolMin) {
+        connectionConfig.min = this.db.poolMin;
+      }
+      if (this.db.idleTimeoutMs) {
+        connectionConfig.idleTimeoutMillis = this.db.idleTimeoutMs;
+      }
+      if (this.db.connectionTimeoutMs) {
+        connectionConfig.connectionTimeoutMillis = this.db.connectionTimeoutMs;
+      }
+    }
+
+    return connectionConfig;
   }
 
   async initialize(): Promise<void> {
@@ -83,8 +128,8 @@ export class DataStore {
   }
 
   private async runMigrations(): Promise<void> {
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
+    const statements = [
+      `CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
@@ -92,26 +137,17 @@ export class DataStore {
         avatar_color TEXT,
         created_at TIMESTAMPTZ NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL
-      );
-    `);
-
-    await this.pool.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users ((LOWER(email)));
-    `);
-
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS task_lists (
+      );`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users ((LOWER(email)));`,
+      `CREATE TABLE IF NOT EXISTS task_lists (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         color TEXT,
         description TEXT,
         created_at TIMESTAMPTZ NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL
-      );
-    `);
-
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS tasks (
+      );`,
+      `CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         list_id TEXT NOT NULL REFERENCES task_lists (id) ON DELETE CASCADE,
         title TEXT NOT NULL,
@@ -127,16 +163,34 @@ export class DataStore {
         recurrence JSONB,
         history JSONB NOT NULL DEFAULT '[]'::jsonb,
         starred BOOLEAN DEFAULT FALSE
-      );
-    `);
+      );`,
+      `CREATE INDEX IF NOT EXISTS tasks_list_id_idx ON tasks (list_id);`,
+      `CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks (status);`,
+    ];
 
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS tasks_list_id_idx ON tasks (list_id);
-    `);
+    const runStatements = async (client: { query: (sql: string) => Promise<unknown> }) => {
+      for (const statement of statements) {
+        await client.query(statement);
+      }
+    };
 
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks (status);
-    `);
+    if (this.db.unpooledConnectionString) {
+      const client = new Client(this.buildConnectionConfig(true));
+      await client.connect();
+      try {
+        await runStatements(client);
+      } finally {
+        await client.end();
+      }
+      return;
+    }
+
+    const pooledClient = await this.pool.connect();
+    try {
+      await runStatements(pooledClient);
+    } finally {
+      pooledClient.release();
+    }
   }
 
   private async seedDefaults(): Promise<void> {

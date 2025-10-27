@@ -1,10 +1,10 @@
-﻿# Family Connect
+# Reynard
 
-Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sur Netlify DB (PostgreSQL).
+Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sur PostgreSQL Neon.
 
 ## Aperçu
 
-- **Backend** : Express + TypeScript, stockage PostgreSQL (Netlify DB/Neon), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
+- **Backend** : Express + TypeScript, stockage PostgreSQL (Neon), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
 - **Frontend** : React + Vite + Tailwind + Framer Motion, interface animée, responsive, et focus productivité.
 - **Données** : import initial des listes/tâches issues de Google Tasks (fournies), visibles par tous les utilisateurs.
 
@@ -43,9 +43,12 @@ Variables utiles côté serveur :
 - `CORS_ORIGIN` (défaut `http://localhost:5173`)
 - `COOKIE_SAME_SITE` (`lax`, `strict` ou `none` — défaut `lax` en dev, `none` en prod)
 - `COOKIE_SECURE` (`true`/`false` — défaut `true` en prod)
-- Connexion base : `NETLIFY_DB_CONNECTION_STRING` **ou** couples `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` (Netlify renseigne automatiquement les variables `NETLIFY_DB_*`).
-- `NETLIFY_DB_SSLMODE` / `PGSSLMODE` (facultatif, `require` activé par défaut)
-- `netlify/db/setup.sql` provisionne les tables lors du build Netlify DB
+- Connexion base :
+  - `DATABASE_URL` (pooler Neon)
+  - `DATABASE_URL_UNPOOLED` (connexion directe pour migrations)
+  - compatibles également : `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD`
+- `PGSSLMODE` / `DB_SSL` (facultatif, `require` activé par défaut)
+- `netlify/db/setup.sql` reste disponible pour provisionner la base via SQL brut
 
 Côté client :
 
@@ -64,6 +67,6 @@ Côté client :
 
 - Ajouter des tests unitaires (Vitest côté client, Jest/Supertest côté serveur)
 - Mettre en place ESLint/Prettier et workflows CI
-- Sécuriser la base (sauvegardes, rotation des secrets Netlify DB)
+- Sécuriser la base (sauvegardes, rotation des secrets Neon)
 
 Bon build !
