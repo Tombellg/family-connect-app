@@ -21,6 +21,9 @@ export function buildDefaultStore(): StoreData {
       passwordHash: demoPassword,
       createdAt: now,
       updatedAt: now,
+      role: 'admin',
+      status: 'active',
+      lastLoginAt: now,
     },
     {
       id: nanoid(12),
@@ -30,6 +33,9 @@ export function buildDefaultStore(): StoreData {
       passwordHash: demoPassword,
       createdAt: now,
       updatedAt: now,
+      role: 'user',
+      status: 'active',
+      lastLoginAt: now,
     },
   ];
 
