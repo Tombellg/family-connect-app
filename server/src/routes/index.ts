@@ -1,10 +1,10 @@
-﻿import { Router } from 'express';
-import authRoutes from './authRoutes';
-import taskRoutes from './taskRoutes';
+import { Router } from 'express';
+import authRouter from '../modules/auth/auth.router';
+import taskRouter from '../modules/tasks/task.router';
 
 const router = Router();
 
-router.use('/auth', authRoutes);
-router.use('/tasks', taskRoutes);
+router.use('/auth', authRouter);
+router.use('/tasks', taskRouter);
 
 export default router;
