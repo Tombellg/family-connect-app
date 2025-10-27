@@ -1,4 +1,4 @@
-﻿# Family Connect
+# Family Connect
 
 Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sur Netlify DB (PostgreSQL).
 
@@ -7,6 +7,7 @@ Application web de gestion de tâches partagées pour le foyer, avec authentific
 - **Backend** : Express + TypeScript, stockage PostgreSQL (Netlify DB/Neon), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
 - **Frontend** : React + Vite + Tailwind + Framer Motion, interface animée, responsive, et focus productivité.
 - **Données** : import initial des listes/tâches issues de Google Tasks (fournies), visibles par tous les utilisateurs.
+- **Administration** : endpoints REST sécurisés pour gérer les comptes (création d'admins, activation/désactivation, suppression, suivi des dernières connexions).
 
 ## Installation
 
@@ -59,6 +60,7 @@ Côté client :
 - Récurrence ultra modulable (jour/semaine/mois/année, fins configurables)
 - Historique des occurrences terminées
 - Interface réactive, animations, thème glassmorphism
+- API d'administration pour lister/éditer les comptes, promouvoir ou suspendre des utilisateurs
 
 ## Prochaines étapes suggérées
 
