@@ -1,5 +1,20 @@
 import { randomUUID } from "crypto";
 import { google } from "googleapis";
+import type { tasks_v1 } from "googleapis";
+
+const GOOGLE_TASK_COLORS: Record<string, string> = {
+  "1": "#7986cb",
+  "2": "#33b679",
+  "3": "#8e24aa",
+  "4": "#e67c73",
+  "5": "#f6c026",
+  "6": "#f5511d",
+  "7": "#039be5",
+  "8": "#616161",
+  "9": "#3f51b5",
+  "10": "#0b8043",
+  "11": "#d60000"
+};
 
 export type GoogleTokenBundle = {
   accessToken: string;
@@ -24,6 +39,10 @@ function getOAuthClient(tokens: GoogleTokenBundle) {
     refresh_token: tokens.refreshToken
   });
   return client;
+}
+
+export function getGoogleTasksClient(tokens: GoogleTokenBundle) {
+  return google.tasks({ version: "v1", auth: getOAuthClient(tokens) });
 }
 
 export async function refreshGoogleAccessToken(refreshToken: string) {
@@ -84,7 +103,34 @@ function formatDate(value?: string | null) {
   });
 }
 
-export async function fetchCalendarEvents(tokens: GoogleTokenBundle) {
+function resolveTaskListColor(color?: string, colorId?: string) {
+  if (color) {
+    return color;
+  }
+
+  if (colorId && GOOGLE_TASK_COLORS[colorId]) {
+    return GOOGLE_TASK_COLORS[colorId];
+  }
+
+  return undefined;
+}
+
+export type FormattedCalendarEvent = {
+  id: string;
+  summary: string;
+  location?: string;
+  start: {
+    label: string;
+    iso: string | null;
+  };
+  end: {
+    label: string;
+    iso: string | null;
+  };
+  organizer?: string;
+};
+
+export async function fetchCalendarEvents(tokens: GoogleTokenBundle): Promise<FormattedCalendarEvent[]> {
   const client = getOAuthClient(tokens);
   const calendar = google.calendar({ version: "v3", auth: client });
   const now = new Date();
@@ -98,31 +144,140 @@ export async function fetchCalendarEvents(tokens: GoogleTokenBundle) {
   });
 
   return (
-    data.items?.map((event) => ({
-      id: event.id ?? randomUUID(),
-      summary: event.summary ?? "Sans titre",
-      start: formatDate(event.start?.dateTime ?? event.start?.date ?? undefined),
-      end: formatDate(event.end?.dateTime ?? event.end?.date ?? undefined)
-    })) ?? []
+    data.items?.map((event) => {
+      const startDate = event.start?.dateTime ?? event.start?.date ?? null;
+      const endDate = event.end?.dateTime ?? event.end?.date ?? null;
+
+      return {
+        id: event.id ?? randomUUID(),
+        summary: event.summary ?? "Sans titre",
+        location: event.location ?? undefined,
+        start: {
+          label: formatDate(startDate),
+          iso: startDate
+        },
+        end: {
+          label: formatDate(endDate),
+          iso: endDate
+        },
+        organizer: event.organizer?.displayName ?? event.organizer?.email ?? undefined
+      } satisfies FormattedCalendarEvent;
+    }) ?? []
   );
 }
 
-export async function fetchGoogleTasks(tokens: GoogleTokenBundle) {
+export type FormattedTask = {
+  id: string;
+  title: string;
+  status: string;
+  due?: {
+    label: string;
+    iso: string;
+  };
+  notes?: string;
+  updated?: string;
+  recurrence?: string[];
+  webLink?: string;
+};
+
+export type FormattedTaskList = {
+  id: string;
+  title: string;
+  updated?: string;
+  color?: string;
+  kind?: string;
+  tasks: FormattedTask[];
+};
+
+function parseDueDate(input?: string | null) {
+  if (!input) {
+    return undefined;
+  }
+
+  return {
+    iso: input,
+    label: formatDate(input)
+  };
+}
+
+export function formatGoogleTask(task: tasks_v1.Schema$Task): FormattedTask {
+  const extendedTask = task as tasks_v1.Schema$Task & { recurrence?: string[] };
+
+  return {
+    id: task.id ?? randomUUID(),
+    title: task.title ?? "Sans titre",
+    status: task.status ?? "needsAction",
+    due: parseDueDate(task.due ?? undefined),
+    notes: task.notes ?? undefined,
+    updated: task.updated ?? undefined,
+    recurrence: extendedTask.recurrence ?? undefined,
+    webLink: task.links?.find((link) => link.type === "email")?.link
+  } satisfies FormattedTask;
+}
+
+export async function fetchGoogleTasks(tokens: GoogleTokenBundle): Promise<FormattedTaskList[]> {
   const client = getOAuthClient(tokens);
   const tasks = google.tasks({ version: "v1", auth: client });
 
-  const { data } = await tasks.tasks.list({
-    tasklist: "@default",
-    maxResults: 20,
-    showCompleted: true
+  const { data } = await tasks.tasklists.list({
+    maxResults: 100
   });
 
-  return (
-    data.items?.map((task) => ({
-      id: task.id ?? randomUUID(),
-      title: task.title ?? "Sans titre",
-      status: task.status ?? "inconnue",
-      due: task.due ? formatDate(task.due) : undefined
-    })) ?? []
+  const lists = data.items ?? [];
+
+  if (!lists.length) {
+    return [];
+  }
+
+  const detailedLists = await Promise.all(
+    lists.map(async (list) => {
+      const enhancedList = list as tasks_v1.Schema$TaskList & { color?: string; colorId?: string };
+      try {
+        const { data: taskData } = await tasks.tasks.list({
+          tasklist: list.id ?? "@default",
+          maxResults: 200,
+          showCompleted: true,
+          showHidden: true
+        });
+
+        const formattedTasks: FormattedTask[] =
+          taskData.items?.map((task) => formatGoogleTask(task)) ?? [];
+
+        return {
+          id: list.id ?? randomUUID(),
+          title: list.title ?? "Sans titre",
+          updated: list.updated ?? undefined,
+          color: resolveTaskListColor(enhancedList.color ?? undefined, enhancedList.colorId ?? undefined),
+          kind: list.kind ?? undefined,
+          tasks: formattedTasks
+        } satisfies FormattedTaskList;
+      } catch (error) {
+        console.error("Erreur lors de la récupération des tâches d'une liste", {
+          listId: list.id,
+          error
+        });
+        return {
+          id: list.id ?? randomUUID(),
+          title: list.title ?? "Sans titre",
+          updated: list.updated ?? undefined,
+          color: resolveTaskListColor(enhancedList.color ?? undefined, enhancedList.colorId ?? undefined),
+          kind: list.kind ?? undefined,
+          tasks: []
+        } satisfies FormattedTaskList;
+      }
+    })
   );
+
+  return detailedLists.sort((a, b) => {
+    if (!a.updated && !b.updated) {
+      return a.title.localeCompare(b.title);
+    }
+    if (!a.updated) {
+      return 1;
+    }
+    if (!b.updated) {
+      return -1;
+    }
+    return new Date(b.updated).getTime() - new Date(a.updated).getTime();
+  });
 }
