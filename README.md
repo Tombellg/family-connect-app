@@ -31,10 +31,16 @@ DATABASE_URL=postgresql://...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 NEXTAUTH_SECRET=... # peut être généré avec `openssl rand -base64 32`
+# (optionnel) STACK_SECRET_SERVER_KEY=... # utilisé comme repli si NEXTAUTH_SECRET est absent
 NEXTAUTH_URL=http://localhost:3000
 ```
 
 2. Dans la console Google Cloud, activez les APIs Calendar et Tasks pour votre projet OAuth et ajoutez `http://localhost:3000/api/auth/callback/google` comme URI de redirection autorisée.
+
+3. **Déploiement Vercel** :
+   - Définissez impérativement une variable `NEXTAUTH_SECRET` (32+ caractères aléatoires) dans l'onglet *Environment Variables*.
+   - À défaut, vous pouvez fournir `STACK_SECRET_SERVER_KEY` (par exemple via un secret Vercel) qui sera utilisé comme solution de secours.
+   - Assurez-vous que l'une de ces valeurs est configurée pour chaque environnement (Preview, Production) afin de sécuriser les sessions NextAuth.
 
 ## Développement
 
