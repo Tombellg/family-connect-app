@@ -144,7 +144,19 @@ export async function GET() {
   const session = (await getServerSession(authOptions)) as GoogleSession | null;
 
   if (!session?.accessToken) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    return NextResponse.json(
+      {
+        message: "Votre session Google n'est plus valide. Reconnectez-vous puis relancez la synchronisation.",
+        errors: [
+          {
+            scope: "auth" as const,
+            message: "Session Google expirée ou invalide",
+            suggestion: "Cliquez sur \"Se connecter avec Google\" pour renouveler l'autorisation."
+          }
+        ]
+      },
+      { status: 401 }
+    );
   }
 
   let tokens = {
@@ -222,16 +234,45 @@ export async function GET() {
     return NextResponse.json({ events: successfulEvents, tasks: successfulTasks });
   }
 
-  const resourceErrorCount = recordedErrors.filter(
-    (error) => error.scope !== "auth"
-  ).length;
+  const authErrors = recordedErrors.filter((error) => error.scope === "auth");
+  const resourceErrors = recordedErrors.filter((error) => error.scope !== "auth");
+  const resourceErrorCount = resourceErrors.length;
 
-  const status =
-    resourceErrorCount === 2
-      ? 502
-      : resourceErrorCount === 1
-      ? 207
-      : 401;
+  let status: number;
+  if (resourceErrorCount === 2) {
+    status = 502;
+  } else if (resourceErrorCount === 1) {
+    status = 207;
+  } else {
+    status = 401;
+  }
+
+  let message: string | undefined;
+
+  if (resourceErrorCount === 2) {
+    message =
+      "Impossible de récupérer Google Calendar et Google Tasks. Consultez les recommandations ci-dessous.";
+  } else if (resourceErrorCount === 1) {
+    const failedResource = resourceErrors[0]?.scope;
+    message =
+      failedResource === "calendar"
+        ? "Impossible de récupérer Google Calendar. Les tâches ont pu être synchronisées."
+        : "Impossible de récupérer Google Tasks. Les événements Calendar sont disponibles.";
+  }
+
+  if (authErrors.length) {
+    const authMessage =
+      authErrors[0]?.details.message ?? "Autorisation Google expirée ou invalide.";
+    const authSuggestion = authErrors[0]?.suggestion;
+
+    if (!message) {
+      message = authSuggestion
+        ? `${authMessage} ${authSuggestion}`
+        : `${authMessage} Reconnectez-vous à Google.`;
+    } else if (authSuggestion) {
+      message = `${message} ${authSuggestion}`;
+    }
+  }
 
   return NextResponse.json(
     {
@@ -244,7 +285,8 @@ export async function GET() {
         reason: details.reason,
         description: details.description,
         suggestion
-      }))
+      })),
+      message
     },
     { status }
   );
