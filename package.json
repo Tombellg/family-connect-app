@@ -1,19 +1,29 @@
 {
   "name": "family-connect-app",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "npm install --prefix server && npm install --prefix client",
-    "build": "npm run build --prefix server && npm run build --prefix client",
-    "build:server": "npm run build --prefix server",
-    "build:client": "npm run build --prefix client",
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "start": "npm run start --prefix server",
-    "start:client": "npm run preview --prefix client",
-    "lint": "echo \"lint not configured\""
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@auth/pg-adapter": "^1.6.0",
+    "googleapis": "^142.0.0",
+    "next": "^14.2.4",
+    "next-auth": "^4.24.7",
+    "pg": "^8.11.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "dotenv": "^17.2.3"
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.15.6",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.4",
+    "typescript": "^5.4.5"
   }
 }

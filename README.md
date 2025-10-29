@@ -1,71 +1,66 @@
-# Family Connect
+# Family Connect 2.0
 
-Application web de gestion de tâches partagées pour le foyer, avec authentification légère, récurrence avancée et persistance sur Netlify DB (PostgreSQL).
+Nouvelle version de Family Connect bâtie sur Next.js 14. L'application propose une expérience unifiée pour synchroniser votre agenda Google Calendar et vos Google Tasks, avec authentification OAuth2 gérée par NextAuth et stockage Postgres sur Neon.
 
-## Aperçu
+## Fonctionnalités
 
-- **Backend** : Express + TypeScript, stockage PostgreSQL (Netlify DB/Neon), auth JWT en cookie HTTPOnly, logique de récurrence avec `rrule`.
-- **Frontend** : React + Vite + Tailwind + Framer Motion, interface animée, responsive, et focus productivité.
-- **Données** : import initial des listes/tâches issues de Google Tasks (fournies), visibles par tous les utilisateurs.
-- **Administration** : endpoints REST sécurisés pour gérer les comptes (création d'admins, activation/désactivation, suppression, suivi des dernières connexions).
+- Authentification Google OAuth2 avec accès hors ligne et rafraîchissement automatique des tokens.
+- Synchronisation à la demande des événements Google Calendar (agenda principal) et des tâches Google Tasks (liste par défaut).
+- Persistance des sessions et des comptes via PostgreSQL (Neon) grâce à l'adaptateur officiel Auth.js.
+- Interface unique et responsive (Next.js App Router + React Server Components).
+- Configuration centralisée via variables d'environnement.
+
+## Prérequis
+
+- Node.js 18+
+- Accès à une base PostgreSQL (Neon conseillé)
+- Identifiants OAuth Google Cloud (client ID + client secret)
 
 ## Installation
 
 ```bash
 npm install
-npm install --prefix server
-npm install --prefix client
 ```
 
-## Développement local
+## Configuration
+
+1. Copiez `.env.example` en `.env.local` et renseignez les valeurs :
+
+```ini
+DATABASE_URL=postgresql://...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+NEXTAUTH_SECRET=... # peut être généré avec `openssl rand -base64 32`
+NEXTAUTH_URL=http://localhost:3000
+```
+
+2. Dans la console Google Cloud, activez les APIs Calendar et Tasks pour votre projet OAuth et ajoutez `http://localhost:3000/api/auth/callback/google` comme URI de redirection autorisée.
+
+## Développement
 
 ```bash
 npm run dev
 ```
 
-- API : http://localhost:4000
-- Frontend : http://localhost:5173 (configure `VITE_API_URL` si besoin)
+L'application est disponible sur http://localhost:3000.
 
-## Build production
+## Production
 
 ```bash
 npm run build
+npm start
 ```
 
-- `server/dist` : code compilé de l'API
-- `client/dist` : bundle frontend
+## Tests
 
-## Environnement
+Aucun test automatisé n'est encore fourni. Ajoutez vos suites de tests selon vos besoins.
 
-Variables utiles côté serveur :
+## Structure principale
 
-- `PORT` (défaut `4000`)
-- `JWT_SECRET`
-- `CORS_ORIGIN` (défaut `http://localhost:5173`)
-- `COOKIE_SAME_SITE` (`lax`, `strict` ou `none` — défaut `lax` en dev, `none` en prod)
-- `COOKIE_SECURE` (`true`/`false` — défaut `true` en prod)
-- Connexion base : `NETLIFY_DB_CONNECTION_STRING` **ou** couples `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` (Netlify renseigne automatiquement les variables `NETLIFY_DB_*`).
-- `NETLIFY_DB_SSLMODE` / `PGSSLMODE` (facultatif, `require` activé par défaut)
-- `netlify/db/setup.sql` provisionne les tables lors du build Netlify DB
+- `app/` : routes, pages et composants Next.js (App Router).
+- `app/api/` : routes API (authentification, synchronisation Google).
+- `lib/` : configuration NextAuth, accès base de données, clients Google.
 
-Côté client :
+## Licence
 
-- `VITE_API_URL` (défaut `http://localhost:4000/api`)
-
-## Fonctionnalités clés
-
-- Création/connexion depuis l'UI
-- Session persistée via cookie sécurisé
-- Tableaux partagés avec stats par liste
-- Récurrence ultra modulable (jour/semaine/mois/année, fins configurables)
-- Historique des occurrences terminées
-- Interface réactive, animations, thème glassmorphism
-- API d'administration pour lister/éditer les comptes, promouvoir ou suspendre des utilisateurs
-
-## Prochaines étapes suggérées
-
-- Ajouter des tests unitaires (Vitest côté client, Jest/Supertest côté serveur)
-- Mettre en place ESLint/Prettier et workflows CI
-- Sécuriser la base (sauvegardes, rotation des secrets Netlify DB)
-
-Bon build !
+Projet privé — usage interne uniquement.
