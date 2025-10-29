@@ -1,0 +1,355 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 48px;
+  border-radius: 32px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(22px);
+}
+
+.heroText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.kicker {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.heroText h1 {
+  font-size: clamp(2.4rem, 2.2rem + 1vw, 3.4rem);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.heroText p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+.signInGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.button {
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-primary);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
+    color 0.2s ease;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.googleButton {
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.55);
+}
+
+.googleButton:not(:disabled):hover {
+  background: rgba(46, 56, 78, 0.92);
+}
+
+.googleIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: conic-gradient(#ea4335 0deg 90deg, #fbbc04 90deg 180deg, #34a853 180deg 270deg, #4285f4 270deg 360deg);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.authenticatedRow {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.identityCard {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 24px;
+  padding: 18px 22px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 24px 46px rgba(2, 6, 23, 0.5);
+  max-width: 320px;
+}
+
+.identityLabel {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.identityValue {
+  margin: 6px 0 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #021320;
+  box-shadow: 0 24px 48px rgba(34, 211, 238, 0.35);
+}
+
+.primaryButton:not(:disabled):hover {
+  box-shadow: 0 28px 56px rgba(34, 211, 238, 0.45);
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid var(--border-soft);
+}
+
+.ghostButton:not(:disabled):hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.heroCard {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(200deg, rgba(125, 211, 252, 0.28) 0%, rgba(30, 64, 175, 0.35) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(24px);
+}
+
+.heroCard h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.heroCardStats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heroCardStat {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.heroCardStat dt {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.heroCardStat dd {
+  margin: 6px 0 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.heroCard footer {
+  margin-top: auto;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.alert {
+  border-radius: 20px;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  background: rgba(127, 29, 29, 0.38);
+  padding: 18px 22px;
+  font-size: 0.96rem;
+}
+
+.emptyState {
+  text-align: center;
+  border-radius: 26px;
+  padding: 36px;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.45);
+  color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+}
+
+.emptyState h2 {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border-radius: 28px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 28px 60px rgba(2, 6, 23, 0.45);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.listItem {
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+}
+
+.listItemTitle {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.listItemMeta {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(59, 130, 246, 0.25);
+  color: #dbeafe;
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    flex-direction: column;
+  }
+
+  .heroCard {
+    flex: 1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 36px 26px;
+  }
+
+  .heroText {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 28px 22px;
+    gap: 28px;
+  }
+
+  .buttonRow {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .button {
+    width: 100%;
+  }
+
+  .identityCard {
+    max-width: 100%;
+  }
+
+  .section {
+    padding: 26px;
+  }
+}
