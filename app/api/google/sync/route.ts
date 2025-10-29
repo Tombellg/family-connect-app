@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { fetchCalendarEvents, fetchGoogleTasks } from "@/lib/google";
+import {
+  fetchCalendarEvents,
+  fetchGoogleTasks,
+  refreshGoogleAccessToken
+} from "@/lib/google";
 
 type GoogleSession = Session & {
   accessToken?: string;
@@ -10,30 +14,280 @@ type GoogleSession = Session & {
   expiresAt?: number;
 };
 
+type GoogleResource = "calendar" | "tasks";
+
+type GoogleErrorDetails = {
+  statusCode?: number;
+  reason?: string;
+  message: string;
+  description?: string;
+};
+
+type RecordedError = {
+  scope: GoogleResource | "auth";
+  details: GoogleErrorDetails;
+  suggestion?: string;
+};
+
+function isAuthorizationError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeError = error as {
+    code?: number;
+    status?: number;
+    response?: { status?: number };
+    message?: string;
+  };
+
+  const statusCode = maybeError.code ?? maybeError.status ?? maybeError.response?.status;
+  if (typeof statusCode === "number" && [401, 403].includes(statusCode)) {
+    return true;
+  }
+
+  if (typeof maybeError.message === "string") {
+    const message = maybeError.message.toLowerCase();
+    return message.includes("invalid grant") || message.includes("unauthorized");
+  }
+
+  return false;
+}
+
+function extractGoogleErrorDetails(error: unknown): GoogleErrorDetails {
+  const fallbackMessage =
+    (error instanceof Error && error.message) || "Erreur Google inattendue";
+
+  if (!error || typeof error !== "object") {
+    return { message: fallbackMessage };
+  }
+
+  const maybeError = error as {
+    code?: number;
+    status?: number;
+    response?: {
+      status?: number;
+      data?: {
+        error?: {
+          code?: number;
+          message?: string;
+          status?: string;
+          errors?: Array<{ message?: string; reason?: string }>;
+        };
+      };
+    };
+    message?: string;
+  };
+
+  const statusCode =
+    maybeError.response?.status ?? maybeError.code ?? maybeError.status;
+
+  const responseError = maybeError.response?.data?.error;
+
+  const descriptionParts: string[] = [];
+  if (responseError?.errors?.length) {
+    for (const item of responseError.errors) {
+      if (item?.message) {
+        descriptionParts.push(item.message);
+      }
+    }
+  }
+
+  if (maybeError.message) {
+    descriptionParts.push(maybeError.message);
+  }
+
+  return {
+    statusCode,
+    reason: responseError?.status,
+    message: responseError?.message ?? fallbackMessage,
+    description: descriptionParts.length ? descriptionParts.join(" | ") : undefined
+  };
+}
+
+function buildSuggestion(resource: GoogleResource | "auth", details: GoogleErrorDetails) {
+  const message = details.message.toLowerCase();
+  const description = details.description?.toLowerCase() ?? "";
+
+  if (resource === "auth" && details.statusCode === 401) {
+    return "Reconnectez-vous à Google pour renouveler votre autorisation.";
+  }
+
+  if (
+    details.statusCode === 403 &&
+    (message.includes("insufficient") || description.includes("insufficient"))
+  ) {
+    return "Vérifiez les autorisations OAuth (scopes) et reconnectez-vous à Google.";
+  }
+
+  if (
+    details.statusCode === 403 &&
+    (message.includes("not been used") || description.includes("accessnotconfigured"))
+  ) {
+    return `Activez l'API Google ${
+      resource === "calendar" ? "Calendar" : "Tasks"
+    } dans Google Cloud Console.`;
+  }
+
+  if (resource === "auth" && details.statusCode === 400) {
+    return "Revérifiez le refresh token Google et relancez l'authentification.";
+  }
+
+  if (message.includes("invalid grant")) {
+    return "Le token n'est plus valide. Déconnectez-vous puis reconnectez-vous à Google.";
+  }
+
+  return undefined;
+}
+
 export async function GET() {
   const session = (await getServerSession(authOptions)) as GoogleSession | null;
 
   if (!session?.accessToken) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  }
-
-  try {
-    const tokens = {
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken
-    };
-
-    const [events, tasks] = await Promise.all([
-      fetchCalendarEvents(tokens),
-      fetchGoogleTasks(tokens)
-    ]);
-
-    return NextResponse.json({ events, tasks });
-  } catch (error) {
-    console.error("Erreur de synchronisation Google", error);
     return NextResponse.json(
-      { error: "Impossible de synchroniser les données Google" },
-      { status: 500 }
+      {
+        message: "Votre session Google n'est plus valide. Reconnectez-vous puis relancez la synchronisation.",
+        errors: [
+          {
+            scope: "auth" as const,
+            message: "Session Google expirée ou invalide",
+            suggestion: "Cliquez sur \"Se connecter avec Google\" pour renouveler l'autorisation."
+          }
+        ]
+      },
+      { status: 401 }
     );
   }
+
+  let tokens = {
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken
+  };
+
+  let refreshAttempted = false;
+  const recordedErrors: RecordedError[] = [];
+
+  const recordError = (scope: RecordedError["scope"], error: unknown) => {
+    const details = extractGoogleErrorDetails(error);
+    const suggestion = buildSuggestion(scope, details);
+
+    console.error("Erreur Google", {
+      scope,
+      statusCode: details.statusCode,
+      reason: details.reason,
+      message: details.message,
+      description: details.description,
+      raw: error
+    });
+
+    recordedErrors.push({ scope, details, suggestion });
+  };
+
+  async function attemptFetch<T>(
+    scope: GoogleResource,
+    fetcher: (tokens: { accessToken: string; refreshToken?: string }) => Promise<T>
+  ) {
+    let error: unknown;
+    try {
+      return await fetcher(tokens);
+    } catch (err) {
+      error = err;
+    }
+
+    if (
+      error &&
+      isAuthorizationError(error) &&
+      tokens.refreshToken &&
+      !refreshAttempted
+    ) {
+      refreshAttempted = true;
+      try {
+        const refreshed = await refreshGoogleAccessToken(tokens.refreshToken);
+        tokens = {
+          accessToken: refreshed.accessToken,
+          refreshToken: refreshed.refreshToken ?? tokens.refreshToken
+        };
+
+        return await fetcher(tokens);
+      } catch (refreshError) {
+        recordError("auth", refreshError);
+        error = error ?? refreshError;
+      }
+    }
+
+    if (error) {
+      recordError(scope, error);
+    }
+
+    return null;
+  }
+
+  const [events, tasks] = await Promise.all([
+    attemptFetch("calendar", fetchCalendarEvents),
+    attemptFetch("tasks", fetchGoogleTasks)
+  ]);
+
+  const successfulEvents = events ?? [];
+  const successfulTasks = tasks ?? [];
+
+  if (!recordedErrors.length) {
+    return NextResponse.json({ events: successfulEvents, tasks: successfulTasks });
+  }
+
+  const authErrors = recordedErrors.filter((error) => error.scope === "auth");
+  const resourceErrors = recordedErrors.filter((error) => error.scope !== "auth");
+  const resourceErrorCount = resourceErrors.length;
+
+  let status: number;
+  if (resourceErrorCount === 2) {
+    status = 502;
+  } else if (resourceErrorCount === 1) {
+    status = 207;
+  } else {
+    status = 401;
+  }
+
+  let message: string | undefined;
+
+  if (resourceErrorCount === 2) {
+    message =
+      "Impossible de récupérer Google Calendar et Google Tasks. Consultez les recommandations ci-dessous.";
+  } else if (resourceErrorCount === 1) {
+    const failedResource = resourceErrors[0]?.scope;
+    message =
+      failedResource === "calendar"
+        ? "Impossible de récupérer Google Calendar. Les tâches ont pu être synchronisées."
+        : "Impossible de récupérer Google Tasks. Les événements Calendar sont disponibles.";
+  }
+
+  if (authErrors.length) {
+    const authMessage =
+      authErrors[0]?.details.message ?? "Autorisation Google expirée ou invalide.";
+    const authSuggestion = authErrors[0]?.suggestion;
+
+    if (!message) {
+      message = authSuggestion
+        ? `${authMessage} ${authSuggestion}`
+        : `${authMessage} Reconnectez-vous à Google.`;
+    } else if (authSuggestion) {
+      message = `${message} ${authSuggestion}`;
+    }
+  }
+
+  return NextResponse.json(
+    {
+      events: successfulEvents,
+      tasks: successfulTasks,
+      errors: recordedErrors.map(({ scope, details, suggestion }) => ({
+        scope,
+        message: details.message,
+        statusCode: details.statusCode,
+        reason: details.reason,
+        description: details.description,
+        suggestion
+      })),
+      message
+    },
+    { status }
+  );
 }

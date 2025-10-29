@@ -18,6 +18,20 @@ type TaskItem = {
   status: string;
 };
 
+type SyncError = {
+  scope: "calendar" | "tasks" | "auth";
+  message: string;
+  suggestion?: string;
+  description?: string;
+};
+
+type SyncResponse = {
+  events?: CalendarEvent[];
+  tasks?: TaskItem[];
+  message?: string;
+  errors?: SyncError[];
+};
+
 export default function HomePage() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
@@ -34,15 +48,49 @@ export default function HomePage() {
     setError(null);
     try {
       const response = await fetch("/api/google/sync");
-      if (!response.ok) {
-        throw new Error("Impossible de récupérer les données Google.");
+      const payload = (await response.json().catch(() => null)) as SyncResponse | null;
+
+      if (payload?.events) {
+        setEvents(payload.events);
+      } else if (response.ok) {
+        setEvents([]);
       }
-      const payload = (await response.json()) as {
-        events: CalendarEvent[];
-        tasks: TaskItem[];
-      };
-      setEvents(payload.events);
-      setTasks(payload.tasks);
+      if (payload?.tasks) {
+        setTasks(payload.tasks);
+      } else if (response.ok) {
+        setTasks([]);
+      }
+
+      const separator = " \u2022 ";
+
+      if (!response.ok) {
+        const parts: string[] = [];
+        if (payload?.message) {
+          parts.push(payload.message);
+        }
+
+        if (payload?.errors?.length) {
+          for (const error of payload.errors) {
+            const description = error.description ? ` (${error.description})` : "";
+            const suggestion = error.suggestion ? ` ${error.suggestion}` : "";
+            parts.push(`${error.message}${description}${suggestion}`.trim());
+          }
+        }
+
+        const detailedMessage = parts.length
+          ? parts.join(separator)
+          : "Impossible de récupérer les données Google.";
+
+        setError(detailedMessage);
+        return;
+      }
+
+      setError(
+        payload?.errors?.length
+          ? payload.message ??
+            "Synchronisation partielle effectuée. Vérifiez les détails fournis."
+          : null
+      );
       setLastSync(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inattendue");
