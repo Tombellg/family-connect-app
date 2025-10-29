@@ -1,7 +1,7 @@
 import PostgresAdapter from "@auth/pg-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import type { Session } from "next-auth";
-import { pool } from "@/lib/db";
+import { dbReady, pool } from "@/lib/db";
 import { refreshGoogleAccessToken } from "@/lib/google";
 
 type NextAuthParameters = Parameters<typeof import("next-auth/next").default>;
@@ -16,6 +16,8 @@ const scopes = [
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/tasks.readonly"
 ];
+
+void dbReady;
 
 export const authOptions: NextAuthOptions = {
   adapter: PostgresAdapter(pool),

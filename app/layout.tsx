@@ -14,11 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className="min-h-screen bg-slate-950 text-slate-100">
+      <body className="app-body">
         <Providers>
-          <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-6 py-10">
-            {children}
-          </div>
+          <div className="app-shell">{children}</div>
         </Providers>
       </body>
     </html>

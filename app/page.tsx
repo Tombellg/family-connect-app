@@ -1,7 +1,8 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import styles from "./page.module.css";
 
 type CalendarEvent = {
   id: string;
@@ -22,7 +23,11 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isAuthenticated = status === "authenticated";
+  const isLoadingSession = status === "loading";
 
   const handleSync = async () => {
     setLoading(true);
@@ -38,6 +43,7 @@ export default function HomePage() {
       };
       setEvents(payload.events);
       setTasks(payload.tasks);
+      setLastSync(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inattendue");
     } finally {
@@ -45,86 +51,178 @@ export default function HomePage() {
     }
   };
 
-  return (
-    <main className="flex flex-1 flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-semibold">Family Connect 2.0</h1>
-        <p className="max-w-2xl text-base text-slate-300">
-          Connectez votre compte Google pour synchroniser votre agenda et vos tâches
-          dans une interface unifiée alimentée par PostgreSQL sur Neon.
-        </p>
-      </header>
+  const handleSignOut = async () => {
+    setEvents([]);
+    setTasks([]);
+    setLastSync(null);
+    await signOut({ callbackUrl: "/" });
+  };
 
-      <section className="flex flex-wrap items-center gap-4">
-        {status === "authenticated" ? (
-          <>
-            <div className="rounded border border-slate-700 bg-slate-900 px-4 py-3 shadow">
-              <p className="text-sm text-slate-300">Connecté en tant que</p>
-              <p className="text-lg font-medium">{session?.user?.name ?? session?.user?.email}</p>
+  const calendarSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "En attente de connexion";
+    }
+    if (loading) {
+      return "Synchronisation en cours...";
+    }
+    if (events.length === 0) {
+      return "Aucun événement importé";
+    }
+    return `${events.length} événement${events.length > 1 ? "s" : ""}`;
+  }, [isAuthenticated, loading, events.length]);
+
+  const tasksSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Connectez-vous pour consulter vos tâches";
+    }
+    if (loading) {
+      return "Mise à jour des tâches";
+    }
+    if (tasks.length === 0) {
+      return "Aucune tâche synchronisée";
+    }
+    return `${tasks.length} tâche${tasks.length > 1 ? "s" : ""}`;
+  }, [isAuthenticated, loading, tasks.length]);
+
+  const lastSyncLabel = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Connectez-vous pour lancer une synchronisation";
+    }
+    if (loading) {
+      return "Dernière mise à jour en cours...";
+    }
+    if (!lastSync) {
+      return "Aucune synchronisation effectuée";
+    }
+    return `Dernière synchronisation : ${lastSync.toLocaleString("fr-FR", {
+      dateStyle: "long",
+      timeStyle: "short"
+    })}`;
+  }, [isAuthenticated, loading, lastSync]);
+
+  const hasData = events.length > 0 || tasks.length > 0;
+
+  return (
+    <main className={styles.wrapper}>
+      <section className={styles.hero}>
+        <div className={styles.heroText}>
+          <span className={styles.kicker}>Organisation familiale</span>
+          <h1>Votre agenda et vos tâches, réunis au même endroit.</h1>
+          <p>
+            Synchronisez Google Calendar et Google Tasks en temps réel, sans quitter
+            Family Connect. L’authentification OAuth2 sécurisée et la base Postgres Neon
+            garantissent une expérience fluide et durable.
+          </p>
+
+          {isAuthenticated ? (
+            <div className={styles.authenticatedRow}>
+              <div className={styles.identityCard}>
+                <p className={styles.identityLabel}>Connecté en tant que</p>
+                <p className={styles.identityValue}>
+                  {session?.user?.name ?? session?.user?.email ?? "Utilisateur Google"}
+                </p>
+              </div>
+              <div className={styles.buttonRow}>
+                <button
+                  className={`${styles.button} ${styles.primaryButton}`}
+                  onClick={handleSync}
+                  disabled={loading}
+                >
+                  {loading ? "Synchronisation..." : "Synchroniser maintenant"}
+                </button>
+                <button
+                  className={`${styles.button} ${styles.ghostButton}`}
+                  onClick={handleSignOut}
+                >
+                  Se déconnecter
+                </button>
+              </div>
             </div>
-            <button
-              className="rounded bg-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400"
-              onClick={handleSync}
-              disabled={loading}
-            >
-              {loading ? "Synchronisation..." : "Synchroniser Google"}
-            </button>
-            <button
-              className="rounded border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
-              onClick={() => signOut()}
-            >
-              Se déconnecter
-            </button>
-          </>
-        ) : (
-          <button
-            className="rounded bg-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400"
-            onClick={() => signIn("google")}
-            disabled={status === "loading"}
-          >
-            Se connecter avec Google
-          </button>
-        )}
+          ) : (
+            <div className={styles.signInGroup}>
+              <button
+                className={`${styles.button} ${styles.googleButton}`}
+                onClick={() => signIn("google")}
+                disabled={isLoadingSession}
+              >
+                <span className={styles.googleIcon} aria-hidden />
+                {isLoadingSession ? "Connexion..." : "Se connecter avec Google"}
+              </button>
+              <p className={styles.hint}>
+                Votre autorisation est uniquement utilisée pour lire vos événements et vos tâches.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <aside className={styles.heroCard}>
+          <h2>Synchronisation</h2>
+          <div className={styles.heroCardStats}>
+            <dl className={styles.heroCardStat}>
+              <dt>Calendrier</dt>
+              <dd>{calendarSummary}</dd>
+            </dl>
+            <dl className={styles.heroCardStat}>
+              <dt>Tâches</dt>
+              <dd>{tasksSummary}</dd>
+            </dl>
+          </div>
+          <footer>{lastSyncLabel}</footer>
+        </aside>
       </section>
 
-      {error && (
-        <p className="rounded border border-rose-500 bg-rose-950 px-4 py-3 text-sm text-rose-200">
-          {error}
-        </p>
-      )}
+      {error ? <p className={styles.alert}>{error}</p> : null}
 
-      {events.length > 0 && (
-        <section className="rounded border border-slate-700 bg-slate-900 p-5 shadow">
-          <h2 className="text-2xl font-semibold">Événements Google Calendar</h2>
-          <ul className="mt-4 space-y-3">
+      {isAuthenticated && !loading && !hasData ? (
+        <section className={styles.emptyState}>
+          <h2>Prêt pour votre première synchronisation</h2>
+          <p>
+            Lancez une synchronisation pour importer automatiquement les prochains événements
+            de votre agenda et les tâches à venir.
+          </p>
+        </section>
+      ) : null}
+
+      {events.length > 0 ? (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Événements Google Calendar</h2>
+            <p>Voici les prochains rendez-vous récupérés via l’API Calendar.</p>
+          </div>
+          <ul className={styles.list}>
             {events.map((event) => (
-              <li key={event.id} className="rounded border border-slate-700 bg-slate-950 p-4">
-                <p className="text-lg font-medium">{event.summary || "Sans titre"}</p>
-                <p className="text-sm text-slate-400">
-                  {event.start} – {event.end}
+              <li key={event.id} className={styles.listItem}>
+                <h3 className={styles.listItemTitle}>{event.summary || "Sans titre"}</h3>
+                <p className={styles.listItemMeta}>
+                  <span>{event.start}</span>
+                  <span>→</span>
+                  <span>{event.end}</span>
                 </p>
               </li>
             ))}
           </ul>
         </section>
-      )}
+      ) : null}
 
-      {tasks.length > 0 && (
-        <section className="rounded border border-slate-700 bg-slate-900 p-5 shadow">
-          <h2 className="text-2xl font-semibold">Google Tasks</h2>
-          <ul className="mt-4 space-y-3">
+      {tasks.length > 0 ? (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>Google Tasks</h2>
+            <p>Visualisez rapidement vos tâches et leurs échéances.</p>
+          </div>
+          <ul className={styles.list}>
             {tasks.map((task) => (
-              <li key={task.id} className="rounded border border-slate-700 bg-slate-950 p-4">
-                <p className="text-lg font-medium">{task.title || "Sans titre"}</p>
-                <p className="text-sm text-slate-400">
-                  Statut : {task.status}
-                  {task.due ? ` · Échéance : ${task.due}` : null}
+              <li key={task.id} className={styles.listItem}>
+                <h3 className={styles.listItemTitle}>{task.title || "Sans titre"}</h3>
+                <p className={styles.listItemMeta}>
+                  <span className={styles.badge}>{task.status}</span>
+                  {task.due ? <span>Échéance : {task.due}</span> : null}
                 </p>
               </li>
             ))}
           </ul>
         </section>
-      )}
+      ) : null}
     </main>
   );
 }
