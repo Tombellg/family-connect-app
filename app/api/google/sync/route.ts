@@ -228,10 +228,10 @@ export async function GET() {
   ]);
 
   const successfulEvents = events ?? [];
-  const successfulTasks = tasks ?? [];
+  const successfulTaskLists = tasks ?? [];
 
   if (!recordedErrors.length) {
-    return NextResponse.json({ events: successfulEvents, tasks: successfulTasks });
+    return NextResponse.json({ events: successfulEvents, taskLists: successfulTaskLists });
   }
 
   const authErrors = recordedErrors.filter((error) => error.scope === "auth");
@@ -277,7 +277,7 @@ export async function GET() {
   return NextResponse.json(
     {
       events: successfulEvents,
-      tasks: successfulTasks,
+      taskLists: successfulTaskLists,
       errors: recordedErrors.map(({ scope, details, suggestion }) => ({
         scope,
         message: details.message,
