@@ -19,6 +19,15 @@ const scopes = [
 
 void dbReady;
 
+const authSecret =
+  process.env.NEXTAUTH_SECRET ?? process.env.STACK_SECRET_SERVER_KEY;
+
+if (!authSecret) {
+  throw new Error(
+    "NEXTAUTH_SECRET ou STACK_SECRET_SERVER_KEY doit être défini pour Auth.js"
+  );
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PostgresAdapter(pool),
   session: {
@@ -87,5 +96,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/"
   },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: authSecret
 };
