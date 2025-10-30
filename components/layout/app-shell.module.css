@@ -1,23 +1,25 @@
 .viewport {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.95));
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+  overflow: hidden;
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 40;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 14px clamp(18px, 6vw, 48px);
-  backdrop-filter: blur(22px);
-  background: color-mix(in srgb, rgba(8, 11, 26, 0.88) 82%, transparent);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  gap: 16px;
+  padding: 12px clamp(20px, 5vw, 44px);
+  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, rgba(8, 11, 26, 0.92) 90%, transparent);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .brand {
@@ -249,10 +251,11 @@
 
 .main {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(18px, 4vw, 36px);
-  padding: clamp(24px, 5vw, 56px) clamp(16px, 6vw, 64px) clamp(96px, 8vw, 140px);
+  padding: clamp(8px, 2vw, 16px) clamp(8px, 3vw, 20px) calc(88px + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
 }
 
 .actionDock {
@@ -289,8 +292,7 @@
   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.dockItem svg,
-.dockItemActive svg {
+.dockIcon {
   width: 22px;
   height: 22px;
 }
