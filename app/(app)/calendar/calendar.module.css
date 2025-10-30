@@ -469,6 +469,7 @@
 .popover small {
   font-size: 0.72rem;
   color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .empty {
