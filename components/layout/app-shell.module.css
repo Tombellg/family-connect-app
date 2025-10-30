@@ -1,23 +1,25 @@
 .viewport {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.95));
+    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+  overflow: hidden;
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 40;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 14px clamp(18px, 6vw, 48px);
-  backdrop-filter: blur(22px);
-  background: color-mix(in srgb, rgba(8, 11, 26, 0.88) 82%, transparent);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  gap: 16px;
+  padding: 12px clamp(20px, 5vw, 44px);
+  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, rgba(8, 11, 26, 0.92) 90%, transparent);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .brand {
@@ -249,28 +251,27 @@
 
 .main {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(18px, 4vw, 36px);
-  padding: clamp(24px, 5vw, 56px) clamp(16px, 6vw, 64px) clamp(96px, 8vw, 140px);
+  padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 32px);
+  overflow: hidden;
 }
 
 .actionDock {
-  position: fixed;
-  left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%);
-  width: min(480px, calc(100% - 32px));
+  flex-shrink: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: 4px;
-  padding: 12px 16px;
-  border-radius: 30px;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(28px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 28px 48px rgba(8, 47, 73, 0.35);
+  gap: 6px;
+  padding: 12px clamp(18px, 4vw, 32px);
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 -18px 28px rgba(8, 47, 73, 0.22);
+  width: 100%;
+  position: relative;
   z-index: 32;
 }
 
@@ -281,7 +282,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 18px;
   text-decoration: none;
   color: var(--text-muted);
@@ -289,8 +290,7 @@
   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.dockItem svg,
-.dockItemActive svg {
+.dockIcon {
   width: 22px;
   height: 22px;
 }
@@ -346,13 +346,13 @@
   }
 
   .main {
-    padding: clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px) 120px;
+    padding: clamp(16px, 5vw, 28px);
   }
-}
 
-@media (min-width: 1180px) {
-  .main {
-    padding-bottom: 110px;
+  .actionDock {
+    padding: 14px clamp(20px, 6vw, 36px);
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
   }
 }
 

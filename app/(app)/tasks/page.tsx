@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ArrowPathRoundedSquareIcon, BoltIcon, CalendarDaysIcon, PlusCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import { MonthlyCalendar } from "@/components/calendar/MonthlyCalendar";
 import {
@@ -26,45 +27,6 @@ const DEFAULT_DRAFT: DraftState = {
   due: null,
   recurrence: null,
 };
-
-const RepeatIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M4 4v5h5M20 20v-5h-5M5.5 15.5a6 6 0 019.5-7.5l1 1M18.5 8.5a6 6 0 00-9.5 7.5l1 1"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.6"
-    />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M7 3v2m10-2v2M5 8h14M6 5h12a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.6"
-    />
-  </svg>
-);
-
-const LightningIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M13 3L5 13h6l-1 8 8-10h-6l1-8z"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.6"
-    />
-  </svg>
-);
 
 function formatDateKey(date: Date) {
   const year = date.getFullYear();
@@ -93,6 +55,7 @@ export default function TasksPage() {
   const [showPlanner, setShowPlanner] = useState(false);
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const selectedList = useMemo(
     () => taskLists.find((list) => list.id === selectedListId) ?? taskLists[0],
@@ -159,6 +122,26 @@ export default function TasksPage() {
       color: value.pending ? undefined : "#4ade80",
     }));
   }, [selectedList]);
+
+  const openComposer = () => {
+    setComposerOpen(true);
+    setError(null);
+  };
+
+  const closeComposer = () => {
+    setComposerOpen(false);
+    setShowPlanner(false);
+    setShowRecurrence(false);
+    setError(null);
+  };
+
+  const toggleComposer = () => {
+    if (composerOpen) {
+      closeComposer();
+    } else {
+      openComposer();
+    }
+  };
 
   const tasksByStatus = useMemo(() => {
     const pending = selectedList?.tasks.filter((task) => task.status !== "completed") ?? [];
@@ -229,7 +212,18 @@ export default function TasksPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <span className={styles.headerLabel}>Gestion rapide des tâches</span>
+        <div className={styles.headerTop}>
+          <span className={styles.headerLabel}>Gestion rapide des tâches</span>
+          <button
+            type="button"
+            className={styles.addButton}
+            onClick={toggleComposer}
+            aria-pressed={composerOpen}
+          >
+            <PlusCircleIcon aria-hidden="true" />
+            <span>{composerOpen ? "Masquer" : "Ajouter une tâche"}</span>
+          </button>
+        </div>
         <div className={styles.listPicker} role="tablist" aria-label="Listes de tâches Google">
           {taskLists.map((list) => {
             const active = selectedList?.id === list.id;
@@ -252,235 +246,247 @@ export default function TasksPage() {
       </header>
 
       <section className={styles.workspace}>
-        <div className={styles.composerCard}>
-          <form onSubmit={handleSubmit}>
-            <div className={styles.composerRow}>
-              <span className={styles.composerIcon} aria-hidden="true">
-                ＋
-              </span>
-              <input
-                type="text"
-                value={draft.title}
-                onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-                placeholder="Ajouter une tâche (ex: Ranger la chambre)"
-                required
-              />
-              <button
-                type="button"
-                className={showRecurrence ? styles.iconToggleActive : styles.iconToggle}
-                onClick={() => setShowRecurrence((value) => !value)}
-                aria-pressed={showRecurrence}
-                aria-label="Configurer une récurrence"
-              >
-                <RepeatIcon />
-              </button>
-              <button type="submit" className={celebrating ? styles.submitButtonCelebrating : styles.submitButton} disabled={submitting}>
-                {submitting ? "Ajout…" : celebrating ? "✨" : "Ajouter"}
-              </button>
-            </div>
-
-            <label className={styles.notesField}>
-              <span>Notes</span>
-              <textarea
-                value={draft.notes}
-                onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
-                placeholder="Ajoutez un détail ou un lien rapide"
-              />
-            </label>
-
-            <div className={styles.quickActions}>
-              <button type="button" onClick={() => applyDueOffset(0)}>
-                <LightningIcon />
-                Aujourd’hui
-              </button>
-              <button type="button" onClick={() => applyDueOffset(1)}>
-                <LightningIcon />
-                Demain
-              </button>
-              <button
-                type="button"
-                className={showPlanner ? styles.quickActionActive : undefined}
-                onClick={() => setShowPlanner((value) => !value)}
-              >
-                <CalendarIcon />
-                Choisir une date
-              </button>
-              <span className={styles.dueLabel}>
-                {draft.due ? draft.due.toLocaleDateString("fr-FR", { dateStyle: "long" }) : "Aucune échéance"}
-              </span>
-            </div>
-
-            {showPlanner ? (
-              <div className={styles.calendarPanel}>
-                <MonthlyCalendar
-                  month={calendarMonth}
-                  selectedDate={draft.due}
-                  onSelectDate={(date) => setDraft((current) => ({ ...current, due: date }))}
-                  onMonthChange={(next) => setCalendarMonth(next)}
-                  markers={calendarMarkers}
-                  compact
+        {composerOpen ? (
+          <div className={styles.composerCard}>
+            <form onSubmit={handleSubmit}>
+              <div className={styles.composerRow}>
+                <PlusCircleIcon aria-hidden="true" className={styles.composerIcon} />
+                <input
+                  type="text"
+                  value={draft.title}
+                  onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                  placeholder="Ajouter une tâche (ex: Ranger la chambre)"
+                  required
                 />
                 <button
                   type="button"
-                  className={styles.clearDate}
-                  onClick={() => setDraft((current) => ({ ...current, due: null }))}
+                  className={showRecurrence ? styles.iconToggleActive : styles.iconToggle}
+                  onClick={() => setShowRecurrence((value) => !value)}
+                  aria-pressed={showRecurrence}
+                  aria-label="Configurer une récurrence"
                 >
-                  Effacer la date
+                  <ArrowPathRoundedSquareIcon aria-hidden="true" />
+                </button>
+                <button
+                  type="submit"
+                  className={celebrating ? styles.submitButtonCelebrating : styles.submitButton}
+                  disabled={submitting}
+                >
+                  {submitting ? "Ajout…" : celebrating ? "✨" : "Ajouter"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.dismissComposer}
+                  onClick={closeComposer}
+                  aria-label="Fermer le formulaire d'ajout"
+                >
+                  <XMarkIcon aria-hidden="true" />
                 </button>
               </div>
-            ) : null}
 
-            {showRecurrence ? (
-              <div className={styles.recurrencePanel}>
-                <div className={styles.recurrenceRow}>
-                  <label>
-                    Fréquence
-                    <select
-                      value={draft.recurrence?.frequency ?? "NONE"}
-                      onChange={(event) => toggleRecurrence(event.target.value as RecurrenceFrequency)}
-                    >
-                      <option value="NONE">Aucune</option>
-                      <option value="DAILY">Jour</option>
-                      <option value="WEEKLY">Semaine</option>
-                      <option value="MONTHLY">Mois</option>
-                      <option value="YEARLY">Année</option>
-                    </select>
-                  </label>
-                  {draft.recurrence && draft.recurrence.frequency !== "NONE" ? (
+              <label className={styles.notesField}>
+                <span>Notes</span>
+                <textarea
+                  value={draft.notes}
+                  onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
+                  placeholder="Ajoutez un détail ou un lien rapide"
+                />
+              </label>
+
+              <div className={styles.quickActions}>
+                <button type="button" onClick={() => applyDueOffset(0)}>
+                  <BoltIcon aria-hidden="true" />
+                  Aujourd’hui
+                </button>
+                <button type="button" onClick={() => applyDueOffset(1)}>
+                  <BoltIcon aria-hidden="true" />
+                  Demain
+                </button>
+                <button
+                  type="button"
+                  className={showPlanner ? styles.quickActionActive : undefined}
+                  onClick={() => setShowPlanner((value) => !value)}
+                >
+                  <CalendarDaysIcon aria-hidden="true" />
+                  Choisir une date
+                </button>
+                <span className={styles.dueLabel}>
+                  {draft.due ? draft.due.toLocaleDateString("fr-FR", { dateStyle: "long" }) : "Aucune échéance"}
+                </span>
+              </div>
+
+              {showPlanner ? (
+                <div className={styles.calendarPanel}>
+                  <MonthlyCalendar
+                    month={calendarMonth}
+                    selectedDate={draft.due}
+                    onSelectDate={(date) => setDraft((current) => ({ ...current, due: date }))}
+                    onMonthChange={(next) => setCalendarMonth(next)}
+                    markers={calendarMarkers}
+                    compact
+                  />
+                  <button
+                    type="button"
+                    className={styles.clearDate}
+                    onClick={() => setDraft((current) => ({ ...current, due: null }))}
+                  >
+                    Effacer la date
+                  </button>
+                </div>
+              ) : null}
+
+              {showRecurrence ? (
+                <div className={styles.recurrencePanel}>
+                  <div className={styles.recurrenceRow}>
                     <label>
-                      Intervalle
+                      Fréquence
+                      <select
+                        value={draft.recurrence?.frequency ?? "NONE"}
+                        onChange={(event) => toggleRecurrence(event.target.value as RecurrenceFrequency)}
+                      >
+                        <option value="NONE">Aucune</option>
+                        <option value="DAILY">Jour</option>
+                        <option value="WEEKLY">Semaine</option>
+                        <option value="MONTHLY">Mois</option>
+                        <option value="YEARLY">Année</option>
+                      </select>
+                    </label>
+                    {draft.recurrence && draft.recurrence.frequency !== "NONE" ? (
+                      <label>
+                        Intervalle
+                        <input
+                          type="number"
+                          min={1}
+                          value={draft.recurrence.interval}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              recurrence: {
+                                ...current.recurrence!,
+                                interval: Number.parseInt(event.target.value, 10) || 1,
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  {draft.recurrence && draft.recurrence.frequency === "WEEKLY" ? (
+                    <div className={styles.weekdayRow}>
+                      {WEEKDAY_OPTIONS.map((option) => {
+                        const active = draft.recurrence!.weekdays.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={active ? styles.weekdayActive : styles.weekdayButton}
+                            onClick={() => {
+                              const weekdays = active
+                                ? draft.recurrence!.weekdays.filter((day) => day !== option.value)
+                                : [...draft.recurrence!.weekdays, option.value];
+                              setDraft((current) => ({
+                                ...current,
+                                recurrence: { ...current.recurrence!, weekdays },
+                              }));
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  {draft.recurrence && draft.recurrence.frequency === "MONTHLY" ? (
+                    <label className={styles.monthDayField}>
+                      Jour du mois
                       <input
                         type="number"
                         min={1}
-                        value={draft.recurrence.interval}
+                        max={31}
+                        value={draft.recurrence.monthDay ?? draft.due?.getDate() ?? 1}
                         onChange={(event) =>
                           setDraft((current) => ({
                             ...current,
                             recurrence: {
                               ...current.recurrence!,
-                              interval: Number.parseInt(event.target.value, 10) || 1,
+                              monthDay: Number.parseInt(event.target.value, 10) || 1,
                             },
                           }))
                         }
                       />
                     </label>
                   ) : null}
-                </div>
-                {draft.recurrence && draft.recurrence.frequency === "WEEKLY" ? (
-                  <div className={styles.weekdayRow}>
-                    {WEEKDAY_OPTIONS.map((option) => {
-                      const active = draft.recurrence!.weekdays.includes(option.value);
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={active ? styles.weekdayActive : styles.weekdayButton}
-                          onClick={() => {
-                            const weekdays = active
-                              ? draft.recurrence!.weekdays.filter((day) => day !== option.value)
-                              : [...draft.recurrence!.weekdays, option.value];
+                  {draft.recurrence && draft.recurrence.frequency !== "NONE" ? (
+                    <div className={styles.recurrenceEnd}>
+                      <label>
+                        Fin de répétition
+                        <select
+                          value={draft.recurrence.end.type}
+                          onChange={(event) =>
                             setDraft((current) => ({
                               ...current,
-                              recurrence: { ...current.recurrence!, weekdays },
-                            }));
-                          }}
+                              recurrence: {
+                                ...current.recurrence!,
+                                end: { type: event.target.value as RecurrenceState["end"]["type"] },
+                              },
+                            }))
+                          }
                         >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-                {draft.recurrence && draft.recurrence.frequency === "MONTHLY" ? (
-                  <label className={styles.monthDayField}>
-                    Jour du mois
-                    <input
-                      type="number"
-                      min={1}
-                      max={31}
-                      value={draft.recurrence.monthDay ?? draft.due?.getDate() ?? 1}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          recurrence: {
-                            ...current.recurrence!,
-                            monthDay: Number.parseInt(event.target.value, 10) || 1,
-                          },
-                        }))
-                      }
-                    />
-                  </label>
-                ) : null}
-                {draft.recurrence && draft.recurrence.frequency !== "NONE" ? (
-                  <div className={styles.recurrenceEnd}> 
-                    <label>
-                      Fin de répétition
-                      <select
-                        value={draft.recurrence.end.type}
-                        onChange={(event) =>
-                          setDraft((current) => ({
-                            ...current,
-                            recurrence: {
-                              ...current.recurrence!,
-                              end: { type: event.target.value as RecurrenceState["end"]["type"] },
-                            },
-                          }))
-                        }
-                      >
-                        <option value="never">Jamais</option>
-                        <option value="after">Après un certain nombre</option>
-                        <option value="on">À une date</option>
-                      </select>
-                    </label>
-                    {draft.recurrence.end.type === "after" ? (
-                      <label>
-                        Nombre d’occurrences
-                        <input
-                          type="number"
-                          min={1}
-                          value={typeof draft.recurrence.end.value === "number" ? draft.recurrence.end.value : 1}
-                          onChange={(event) =>
-                            setDraft((current) => ({
-                              ...current,
-                              recurrence: {
-                                ...current.recurrence!,
-                                end: {
-                                  type: "after",
-                                  value: Number.parseInt(event.target.value, 10) || 1,
+                          <option value="never">Jamais</option>
+                          <option value="after">Après un certain nombre</option>
+                          <option value="on">À une date</option>
+                        </select>
+                      </label>
+                      {draft.recurrence.end.type === "after" ? (
+                        <label>
+                          Nombre d’occurrences
+                          <input
+                            type="number"
+                            min={1}
+                            value={typeof draft.recurrence.end.value === "number" ? draft.recurrence.end.value : 1}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                recurrence: {
+                                  ...current.recurrence!,
+                                  end: {
+                                    type: "after",
+                                    value: Number.parseInt(event.target.value, 10) || 1,
+                                  },
                                 },
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-                    ) : null}
-                    {draft.recurrence.end.type === "on" ? (
-                      <label>
-                        Date de fin
-                        <input
-                          type="date"
-                          value={typeof draft.recurrence.end.value === "string" ? draft.recurrence.end.value : ""}
-                          onChange={(event) =>
-                            setDraft((current) => ({
-                              ...current,
-                              recurrence: {
-                                ...current.recurrence!,
-                                end: { type: "on", value: event.target.value || undefined },
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-                    ) : null}
-                  </div>
-                ) : null}
-                <span className={styles.recurrenceSummary}>{describeRecurrence(draft.recurrence)}</span>
-              </div>
-            ) : null}
+                              }))
+                            }
+                          />
+                        </label>
+                      ) : null}
+                      {draft.recurrence.end.type === "on" ? (
+                        <label>
+                          Date de fin
+                          <input
+                            type="date"
+                            value={typeof draft.recurrence.end.value === "string" ? draft.recurrence.end.value : ""}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                recurrence: {
+                                  ...current.recurrence!,
+                                  end: { type: "on", value: event.target.value || undefined },
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <span className={styles.recurrenceSummary}>{describeRecurrence(draft.recurrence)}</span>
+                </div>
+              ) : null}
 
-            {error ? <p className={styles.error}>{error}</p> : null}
-          </form>
-        </div>
+              {error ? <p className={styles.error}>{error}</p> : null}
+            </form>
+          </div>
+        ) : null}
 
         <div className={styles.taskColumn}>
           <header>

@@ -3,54 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDaysIcon, CheckCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./app-shell.module.css";
 
-type IconComponent = () => JSX.Element;
-
-const TaskIcon: IconComponent = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M7 12.5l2.5 2.5L17 7.5M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const CalendarIcon: IconComponent = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M7 3v3m10-3v3M5 8h14M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2zm3 6h2v2H9v-2z"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const SettingsIcon: IconComponent = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zm8.5-3.5a1 1 0 01.78.36l1.07 1.32a1 1 0 01-.08 1.32l-1.32 1.32a1 1 0 01-1.1.2l-1.56-.64a6.68 6.68 0 01-1.45.84l-.23 1.7a1 1 0 01-.99.88h-1.88a1 1 0 01-.99-.88l-.23-1.7a6.68 6.68 0 01-1.45-.84l-1.56.64a1 1 0 01-1.1-.2l-1.32-1.32a1 1 0 01-.08-1.32l1.07-1.32a6.7 6.7 0 010-1.68L4.1 9.32a1 1 0 01.08-1.32l1.32-1.32a1 1 0 011.1-.2l1.56.64a6.68 6.68 0 011.45-.84l.23-1.7A1 1 0 0110.83 4h1.88a1 1 0 01.99.88l.23 1.7a6.68 6.68 0 011.45.84l1.56-.64a1 1 0 011.1.2l1.32 1.32a1 1 0 01.08 1.32l-1.07 1.32c.06.28.09.56.09.84z"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+type IconComponent = typeof CheckCircleIcon;
 
 const NAVIGATION: { href: string; label: string; Icon: IconComponent }[] = [
-  { href: "/tasks", label: "Tâches", Icon: TaskIcon },
-  { href: "/calendar", label: "Calendrier", Icon: CalendarIcon },
-  { href: "/settings", label: "Réglages", Icon: SettingsIcon },
+  { href: "/tasks", label: "Tâches", Icon: CheckCircleIcon },
+  { href: "/calendar", label: "Calendrier", Icon: CalendarDaysIcon },
+  { href: "/settings", label: "Réglages", Icon: Cog6ToothIcon },
 ];
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -172,7 +134,7 @@ function ShellContent({ children }: { children: ReactNode }) {
   } = useDashboard();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const active = useMemo(() => pathname?.replace(/\/$/, "") || "/overview", [pathname]);
+  const active = useMemo(() => pathname?.replace(/\/$/, "") || "/calendar", [pathname]);
 
   useEffect(() => {
     setSettingsOpen(false);
@@ -194,7 +156,7 @@ function ShellContent({ children }: { children: ReactNode }) {
   return (
     <div className={styles.viewport}>
       <header className={styles.topbar}>
-        <Link href="/overview" className={styles.brand}>
+        <Link href="/calendar" className={styles.brand}>
           <span className={styles.brandDot} />
           <span className={styles.brandText}>
             <strong>Family Connect</strong>
@@ -232,7 +194,7 @@ function ShellContent({ children }: { children: ReactNode }) {
               aria-controls="app-shell-settings"
               aria-label="Ouvrir le menu paramètres"
             >
-              <SettingsIcon />
+              <Cog6ToothIcon aria-hidden="true" />
             </button>
             <div
               id="app-shell-settings"
@@ -265,7 +227,7 @@ function ShellContent({ children }: { children: ReactNode }) {
       <nav className={styles.actionDock} aria-label="Navigation principale">
         {NAVIGATION.map(({ href, label, Icon }) => (
           <Link key={href} href={href} className={active === href ? styles.dockItemActive : styles.dockItem}>
-            <Icon />
+            <Icon aria-hidden="true" className={styles.dockIcon} />
             <span>{label}</span>
           </Link>
         ))}

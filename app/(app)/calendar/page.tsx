@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, ListBulletIcon, MagnifyingGlassIcon, PlusIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import type { FormattedTaskList } from "@/lib/google";
 import styles from "./calendar.module.css";
@@ -47,6 +48,11 @@ const WEEKDAY_INDEX: Record<string, number> = {
 };
 
 const COLOR_POOL = ["#38bdf8", "#818cf8", "#f472b6", "#22d3ee", "#facc15", "#4ade80", "#fb7185"];
+
+const MAX_DAY_PREVIEW = 4;
+const MAX_DAY_DETAILS = 6;
+const MAX_AGENDA_SECTIONS = 8;
+const MAX_AGENDA_ITEMS_PER_DAY = 4;
 
 const formatDateKey = (value: Date) => {
   const year = value.getFullYear();
@@ -219,7 +225,6 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [popover, setPopover] = useState<{ item: CalendarItem; position: { top: number; left: number } } | null>(null);
   const [eventDraft, setEventDraft] = useState({
     summary: "",
     date: formatDateKey(new Date()),
@@ -231,7 +236,6 @@ export default function CalendarPage() {
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -268,15 +272,6 @@ export default function CalendarPage() {
     }
     setEnabledSources(new Set(sources.map((source) => source.id)));
   }, [sources]);
-
-  useEffect(() => {
-    if (!popover) {
-      return;
-    }
-    const handleClose = () => setPopover(null);
-    window.addEventListener("pointerdown", handleClose, { once: true });
-    return () => window.removeEventListener("pointerdown", handleClose);
-  }, [popover]);
 
   const toggleSource = (id: string) => {
     setEnabledSources((current) => {
@@ -376,7 +371,7 @@ export default function CalendarPage() {
       }
     });
 
-    map.forEach((items, key) => {
+    map.forEach((items) => {
       items.sort((a, b) => {
         if (a.rawDate && b.rawDate) {
           return a.rawDate.getTime() - b.rawDate.getTime();
@@ -401,8 +396,13 @@ export default function CalendarPage() {
 
   const selectedKey = formatDateKey(selectedDate);
   const dayItems = filteredItemsByDay.get(selectedKey) ?? [];
-
   const weeks = useMemo(() => buildMonthMatrix(currentMonth), [currentMonth]);
+
+  const todayKey = formatDateKey(new Date());
+  const monthLabel = currentMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const dayPreview = dayItems.slice(0, MAX_DAY_DETAILS);
+  const dayOverflow = Math.max(dayItems.length - dayPreview.length, 0);
+  const agendaSections = listItems.slice(0, MAX_AGENDA_SECTIONS);
 
   const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -440,40 +440,43 @@ export default function CalendarPage() {
     setCurrentMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
   };
 
+  const handleComposerToggle = () => {
+    setFormMessage(null);
+    setShowComposer((value) => {
+      const next = !value;
+      if (!value) {
+        setEventDraft((current) => ({ ...current, date: formatDateKey(selectedDate) }));
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className={styles.layout}>
-      <aside className={sidebarCollapsed ? styles.sidebarCollapsed : styles.sidebar}>
+    <div className={styles.page}>
+      <aside className={styles.sidebar}>
         <button
           type="button"
-          className={styles.collapseButton}
-          onClick={() => setSidebarCollapsed((value) => !value)}
-          aria-expanded={!sidebarCollapsed}
+          className={styles.primaryAction}
+          onClick={handleComposerToggle}
+          aria-expanded={showComposer}
         >
-          {sidebarCollapsed ? "⟩" : "⟨"}
+          <PlusIcon aria-hidden="true" />
+          <span>{showComposer ? "Fermer l'éditeur" : "Nouvel évènement"}</span>
         </button>
-        <div className={styles.sidebarInner}>
-          <button
-            type="button"
-            className={styles.createButton}
-            onClick={() => setShowComposer((value) => !value)}
-            aria-expanded={showComposer}
-          >
-            <span aria-hidden="true">＋</span>
-            {!sidebarCollapsed ? <span>Créer un évènement</span> : null}
-          </button>
-          {showComposer ? (
-            <form className={styles.composer} onSubmit={handleCreateEvent}>
+        {showComposer ? (
+          <form className={styles.composer} onSubmit={handleCreateEvent}>
+            <label>
+              <span>Titre</span>
+              <input
+                type="text"
+                value={eventDraft.summary}
+                onChange={(event) => setEventDraft((current) => ({ ...current, summary: event.target.value }))}
+                required
+              />
+            </label>
+            <div className={styles.composerRow}>
               <label>
-                Titre
-                <input
-                  type="text"
-                  value={eventDraft.summary}
-                  onChange={(event) => setEventDraft((current) => ({ ...current, summary: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Date
+                <span>Date</span>
                 <input
                   type="date"
                   value={eventDraft.date}
@@ -481,216 +484,282 @@ export default function CalendarPage() {
                   required
                 />
               </label>
-              <label className={styles.inlineToggle}>
+              <label className={styles.allDayToggle}>
                 <input
                   type="checkbox"
                   checked={eventDraft.allDay}
                   onChange={(event) => setEventDraft((current) => ({ ...current, allDay: event.target.checked }))}
                 />
-                Toute la journée
+                <span>Toute la journée</span>
               </label>
-              {!eventDraft.allDay ? (
-                <div className={styles.timeRow}>
-                  <label>
-                    Début
-                    <input
-                      type="time"
-                      value={eventDraft.startTime}
-                      onChange={(event) => setEventDraft((current) => ({ ...current, startTime: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Fin
-                    <input
-                      type="time"
-                      value={eventDraft.endTime}
-                      onChange={(event) => setEventDraft((current) => ({ ...current, endTime: event.target.value }))}
-                      required
-                    />
-                  </label>
-                </div>
-              ) : null}
+            </div>
+            {!eventDraft.allDay ? (
+              <div className={styles.timeRow}>
+                <label>
+                  <span>Début</span>
+                  <input
+                    type="time"
+                    value={eventDraft.startTime}
+                    onChange={(event) => setEventDraft((current) => ({ ...current, startTime: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Fin</span>
+                  <input
+                    type="time"
+                    value={eventDraft.endTime}
+                    onChange={(event) => setEventDraft((current) => ({ ...current, endTime: event.target.value }))}
+                    required
+                  />
+                </label>
+              </div>
+            ) : null}
+            <label>
+              <span>Lieu</span>
               <input
                 type="text"
                 value={eventDraft.location}
                 onChange={(event) => setEventDraft((current) => ({ ...current, location: event.target.value }))}
                 placeholder="Lieu"
               />
+            </label>
+            <label>
+              <span>Notes</span>
               <textarea
                 value={eventDraft.description}
                 onChange={(event) => setEventDraft((current) => ({ ...current, description: event.target.value }))}
                 placeholder="Notes"
               />
+            </label>
+            {formMessage ? <p className={styles.formMessage}>{formMessage}</p> : null}
+            <div className={styles.formActions}>
               <button type="submit" disabled={creatingEvent}>
                 {creatingEvent ? "Ajout…" : "Enregistrer"}
               </button>
-              {formMessage ? <span className={styles.formMessage}>{formMessage}</span> : null}
-            </form>
-          ) : null}
-
-          <div className={styles.sourceFilters}>
-            <span>Sources visibles</span>
-            {sources.map((source) => (
-              <label key={source.id} className={enabledSources.has(source.id) ? styles.filterActive : undefined}>
-                <input
-                  type="checkbox"
-                  checked={enabledSources.has(source.id)}
-                  onChange={() => toggleSource(source.id)}
-                />
-                <span>
-                  <span
-                    className={styles.filterDot}
-                    style={source.color ? { backgroundColor: source.color } : undefined}
-                  />
-                  {source.label}
-                </span>
-              </label>
+              <button type="button" data-variant="ghost" onClick={handleComposerToggle}>
+                Fermer
+              </button>
+            </div>
+          </form>
+        ) : null}
+        <div className={styles.sidebarSection}>
+          <header className={styles.sectionHeader}>
+            <span>Calendrier</span>
+            <div className={styles.monthStepper}>
+              <button type="button" onClick={() => changeMonth(-1)} aria-label="Mois précédent">
+                <ChevronLeftIcon aria-hidden="true" />
+              </button>
+              <span>{monthLabel}</span>
+              <button type="button" onClick={() => changeMonth(1)} aria-label="Mois suivant">
+                <ChevronRightIcon aria-hidden="true" />
+              </button>
+            </div>
+          </header>
+          <div className={styles.miniWeekdays}>
+            {["L", "M", "M", "J", "V", "S", "D"].map((label) => (
+              <span key={label}>{label}</span>
             ))}
+          </div>
+          <div className={styles.miniGrid}>
+            {weeks.map((week, index) => (
+              <div key={index} className={styles.miniRow}>
+                {week.map((cell) => {
+                  const classes = [
+                    styles.miniDay,
+                    cell.isCurrentMonth ? "" : styles.miniMuted,
+                    cell.key === selectedKey ? styles.miniSelected : "",
+                    cell.key === todayKey ? styles.miniToday : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return (
+                    <button
+                      type="button"
+                      key={cell.key}
+                      className={classes}
+                      onClick={() => {
+                        setSelectedDate(cell.date);
+                        setCurrentMonth(new Date(cell.date.getFullYear(), cell.date.getMonth(), 1));
+                      }}
+                    >
+                      {cell.date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className={styles.sidebarSection}>
+          <header className={styles.sectionHeader}>
+            <span>Sources visibles</span>
+          </header>
+          <div className={styles.sourceList}>
+            {sources.map((source) => {
+              const active = enabledSources.has(source.id);
+              return (
+                <button
+                  key={source.id}
+                  type="button"
+                  className={active ? styles.sourceButtonActive : styles.sourceButton}
+                  onClick={() => toggleSource(source.id)}
+                  aria-pressed={active}
+                >
+                  <span className={styles.sourceDot} style={source.color ? { backgroundColor: source.color } : undefined} />
+                  <span className={styles.sourceLabel}>{source.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </aside>
-
-      <section className={styles.mainArea}>
-        <header className={styles.topBar}>
-          <div className={styles.monthSelector}>
-            <button type="button" onClick={() => changeMonth(-1)} aria-label="Mois précédent">
-              ←
-            </button>
-            <span>{currentMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</span>
-            <button type="button" onClick={() => changeMonth(1)} aria-label="Mois suivant">
-              →
-            </button>
+      <section className={styles.content}>
+        <header className={styles.toolbar}>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.monthTitle}>{monthLabel}</span>
+            <div className={styles.monthControls}>
+              <button type="button" onClick={() => changeMonth(-1)} aria-label="Mois précédent">
+                <ChevronLeftIcon aria-hidden="true" />
+              </button>
+              <button type="button" onClick={() => changeMonth(1)} aria-label="Mois suivant">
+                <ChevronRightIcon aria-hidden="true" />
+              </button>
+            </div>
           </div>
-          <div className={styles.searchBox}>
-            <span aria-hidden="true">🔍</span>
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Rechercher une tâche ou un évènement"
-            />
-          </div>
-          <div className={styles.viewToggle} role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={viewMode === "month"}
-              onClick={() => setViewMode("month")}
-              className={viewMode === "month" ? styles.viewActive : undefined}
-            >
-              Mois
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={viewMode === "list"}
-              onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? styles.viewActive : undefined}
-            >
-              Agenda
-            </button>
+          <div className={styles.toolbarGroup}>
+            <label className={styles.searchField}>
+              <MagnifyingGlassIcon aria-hidden="true" />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Rechercher…"
+              />
+            </label>
+            <div className={styles.viewSwitch} role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === "month"}
+                data-active={viewMode === "month" || undefined}
+                onClick={() => setViewMode("month")}
+              >
+                <Squares2X2Icon aria-hidden="true" />
+                <span>Mois</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === "list"}
+                data-active={viewMode === "list" || undefined}
+                onClick={() => setViewMode("list")}
+              >
+                <ListBulletIcon aria-hidden="true" />
+                <span>Agenda</span>
+              </button>
+            </div>
           </div>
         </header>
-
         {viewMode === "month" ? (
-          <section className={styles.monthView}>
-            <div className={styles.weekDays}>
-              {["L", "M", "M", "J", "V", "S", "D"].map((label) => (
-                <span key={label}>{label}</span>
-              ))}
+          <div className={styles.monthLayout}>
+            <div className={styles.gridWrapper}>
+              <div className={styles.weekdayHeader}>
+                {["L", "M", "M", "J", "V", "S", "D"].map((label) => (
+                  <span key={label}>{label}</span>
+                ))}
+              </div>
+              <div className={styles.monthGrid}>
+                {weeks.map((week, index) => (
+                  <div key={index} className={styles.weekRow}>
+                    {week.map((cell) => {
+                      const items = filteredItemsByDay.get(cell.key) ?? [];
+                      const preview = items.slice(0, MAX_DAY_PREVIEW);
+                      const overflow = Math.max(items.length - preview.length, 0);
+                      const cellClasses = [
+                        styles.dayButton,
+                        cell.isCurrentMonth ? "" : styles.dayMuted,
+                        cell.key === selectedKey ? styles.daySelected : "",
+                        cell.key === todayKey ? styles.dayToday : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      return (
+                        <button
+                          type="button"
+                          key={cell.key}
+                          className={cellClasses}
+                          onClick={() => setSelectedDate(cell.date)}
+                        >
+                          <span className={styles.dayNumber}>{cell.date.getDate()}</span>
+                          <div className={styles.eventList}>
+                            {preview.map((item) => {
+                              const style = item.color
+                                ? { borderColor: item.color, backgroundColor: `${item.color}20` }
+                                : undefined;
+                              return (
+                                <span key={item.id} className={styles.eventChip} style={style}>
+                                  {item.timeLabel ? <small>{item.timeLabel}</small> : null}
+                                  <span>{item.title}</span>
+                                </span>
+                              );
+                            })}
+                            {overflow > 0 ? <span className={styles.moreChip}>+{overflow}</span> : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className={styles.grid}>
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className={styles.weekRow}>
-                  {week.map((cell) => {
-                    const items = filteredItemsByDay.get(cell.key) ?? [];
-                    const isSelected = cell.key === selectedKey;
-                    return (
-                      <div
-                        key={cell.key}
-                        className={`${styles.dayCell} ${cell.isCurrentMonth ? "" : styles.dayMuted} ${
-                          isSelected ? styles.daySelected : ""
-                        }`}
-                        onClick={() => setSelectedDate(cell.date)}
-                      >
-                        <header>
-                          <span>{cell.date.getDate()}</span>
-                        </header>
-                        <ul>
-                          {items.map((item) => (
-                            <li key={item.id}>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  const rect = event.currentTarget.getBoundingClientRect();
-                                  setPopover({
-                                    item,
-                                    position: {
-                                      top: rect.top + window.scrollY + rect.height + 8,
-                                      left: rect.left + window.scrollX + rect.width / 2,
-                                    },
-                                  });
-                                }}
-                                style={item.color ? { borderColor: item.color } : undefined}
-                              >
-                                <span>{item.timeLabel ?? ""}</span>
-                                <strong>{item.title}</strong>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-            <aside className={styles.dayDetails}>
+            <aside className={styles.dayPane}>
               <h3>{formatListLabel(selectedDate)}</h3>
-              <ul>
-                {dayItems.map((item) => (
+              <ul className={styles.dayList}>
+                {dayPreview.map((item) => (
                   <li key={item.id}>
-                    <strong>{item.title}</strong>
-                    {item.timeLabel ? <span>{item.timeLabel}</span> : null}
-                    {item.subtitle ? <small>{item.subtitle}</small> : null}
+                    <span className={styles.dayBadge} style={item.color ? { backgroundColor: item.color } : undefined} />
+                    <div>
+                      <strong>{item.title}</strong>
+                      {item.timeLabel ? <span>{item.timeLabel}</span> : null}
+                      {item.subtitle ? <small>{item.subtitle}</small> : null}
+                    </div>
                   </li>
                 ))}
+                {dayOverflow > 0 ? <li className={styles.dayMore}>+{dayOverflow} autres</li> : null}
                 {!dayItems.length ? <li className={styles.empty}>Aucun élément ce jour-là.</li> : null}
               </ul>
             </aside>
-          </section>
+          </div>
         ) : (
-          <section className={styles.agendaView}>
-            {listItems.map((section) => (
-              <article key={section.key}>
-                <h3>{section.label}</h3>
-                <ul>
-                  {section.items.map((item) => (
-                    <li key={item.id}>
-                      <span className={styles.timeBadge}>{item.timeLabel ?? "Toute la journée"}</span>
-                      <div>
-                        <strong>{item.title}</strong>
-                        {item.subtitle ? <small>{item.subtitle}</small> : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-            {!listItems.length ? <p className={styles.empty}>Aucun élément à afficher pour le moment.</p> : null}
-          </section>
+          <div className={styles.agendaView}>
+            {agendaSections.map((section) => {
+              const preview = section.items.slice(0, MAX_AGENDA_ITEMS_PER_DAY);
+              const overflow = Math.max(section.items.length - preview.length, 0);
+              return (
+                <article key={section.key} className={styles.agendaSection}>
+                  <header>
+                    <span>{section.label}</span>
+                  </header>
+                  <ul>
+                    {preview.map((item) => (
+                      <li key={item.id}>
+                        <span className={styles.timeBadge}>{item.timeLabel ?? "Toute la journée"}</span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          {item.subtitle ? <small>{item.subtitle}</small> : null}
+                        </div>
+                      </li>
+                    ))}
+                    {overflow > 0 ? <li className={styles.dayMore}>+{overflow} supplémentaires</li> : null}
+                  </ul>
+                </article>
+              );
+            })}
+            {!agendaSections.length ? <p className={styles.empty}>Aucun élément à afficher pour le moment.</p> : null}
+          </div>
         )}
       </section>
-
-      {popover ? (
-        <div className={styles.popover} style={{ top: popover.position.top, left: popover.position.left }}>
-          <strong>{popover.item.title}</strong>
-          {popover.item.timeLabel ? <span>{popover.item.timeLabel}</span> : null}
-          {popover.item.subtitle ? <small>{popover.item.subtitle}</small> : null}
-        </div>
-      ) : null}
     </div>
   );
 }
