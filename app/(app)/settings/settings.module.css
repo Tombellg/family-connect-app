@@ -1,0 +1,130 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.header p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.panel,
+.preview {
+  background: rgba(15, 23, 42, 0.82);
+  border-radius: var(--density-radius);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.optionButton,
+.optionActive {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--density-radius);
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.optionActive {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.22);
+  font-weight: 600;
+}
+
+.colorPreview {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.colorPreview[data-accent="lagoon"] {
+  background: linear-gradient(120deg, #0284c7, #38bdf8);
+}
+
+.colorPreview[data-accent="sunset"] {
+  background: linear-gradient(120deg, #f97316, #f472b6);
+}
+
+.colorPreview[data-accent="forest"] {
+  background: linear-gradient(120deg, #0ea5e9, #22c55e);
+}
+
+.colorPreview[data-accent="midnight"] {
+  background: linear-gradient(120deg, #312e81, #6366f1);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle input {
+  width: 20px;
+  height: 20px;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.previewBoard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.previewCard {
+  background: rgba(15, 23, 42, 0.65);
+  border-radius: var(--density-radius);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.previewCard span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.previewCard strong {
+  font-size: 1.1rem;
+}
+
+.previewCard small {
+  color: var(--text-muted);
+}
