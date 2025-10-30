@@ -73,6 +73,7 @@ function formatEventTime(dateIso?: string | null, isAllDay?: boolean) {
 
 export default function OverviewPage() {
   const { taskLists, events, syncing, lastSync } = useDashboard();
+  const [mode, setMode] = useState<PreviewMode>("tasks");
 
   const { totalTasks, completedTasks, overdueTasks } = useMemo(() => {
     const flattened = taskLists.flatMap((list) => list.tasks);
