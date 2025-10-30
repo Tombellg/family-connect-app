@@ -1,17 +1,25 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDaysIcon, CheckCircleIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import {
+  ArrowRightOnRectangleIcon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
+  Cog6ToothIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./app-shell.module.css";
 
 type IconComponent = typeof CheckCircleIcon;
 
 const NAVIGATION: { href: string; label: string; Icon: IconComponent }[] = [
-  { href: "/tasks", label: "Tâches", Icon: CheckCircleIcon },
   { href: "/calendar", label: "Calendrier", Icon: CalendarDaysIcon },
+  { href: "/tasks", label: "Tâches", Icon: CheckCircleIcon },
   { href: "/settings", label: "Réglages", Icon: Cog6ToothIcon },
 ];
 
@@ -122,6 +130,7 @@ function GoogleOneTapPrompt() {
 
 function ShellContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const {
     isAuthenticated,
     loadingSession,
@@ -132,26 +141,29 @@ function ShellContent({ children }: { children: ReactNode }) {
     lastSync,
     syncError,
   } = useDashboard();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const active = useMemo(() => pathname?.replace(/\/$/, "") || "/calendar", [pathname]);
 
   useEffect(() => {
-    setSettingsOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!settingsOpen) {
+    if (!menuOpen) {
       return;
     }
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSettingsOpen(false);
+        setMenuOpen(false);
       }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, [settingsOpen]);
+  }, [menuOpen]);
+
+  const avatar = session?.user?.image;
+  const initials = session?.user?.name?.slice(0, 2).toUpperCase();
 
   return (
     <div className={styles.viewport}>
@@ -164,76 +176,72 @@ function ShellContent({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <div className={styles.topbarActions}>
-          <SyncBadge
-            syncing={syncing}
-            lastSync={lastSync}
-            error={syncError}
-            onSync={() => syncNow()}
-            disabled={syncing || !isAuthenticated}
-          />
-          <div className={styles.accountCluster}>
-            {isAuthenticated ? (
-              <button type="button" className={styles.secondaryButton} onClick={() => requestSignOut()}>
-                Se déconnecter
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={() => requestSignIn()}
-                disabled={loadingSession}
-              >
-                {loadingSession ? "Connexion…" : "Connexion Google"}
-              </button>
-            )}
-            <button
-              type="button"
-              className={styles.settingsToggle}
-              onClick={() => setSettingsOpen((open) => !open)}
-              aria-expanded={settingsOpen}
-              aria-controls="app-shell-settings"
-              aria-label="Ouvrir le menu paramètres"
-            >
-              <Cog6ToothIcon aria-hidden="true" />
-            </button>
-            <div
-              id="app-shell-settings"
-              className={settingsOpen ? styles.settingsSheetOpen : styles.settingsSheet}
-              role="menu"
-            >
-              <Link href="/settings" role="menuitem" onClick={() => setSettingsOpen(false)}>
-                Tableau de personnalisation
+          <button
+            type="button"
+            className={styles.profileButton}
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-expanded={menuOpen}
+            aria-controls="app-shell-profile-menu"
+            aria-label={isAuthenticated ? "Ouvrir le menu du profil" : "Ouvrir le menu de connexion"}
+          >
+            <span className={styles.profileAvatar} data-authenticated={isAuthenticated || undefined}>
+              {avatar ? (
+                <Image src={avatar} alt="Profil" width={36} height={36} />
+              ) : initials ? (
+                <span>{initials}</span>
+              ) : (
+                <UserCircleIcon aria-hidden="true" />
+              )}
+            </span>
+          </button>
+          <div
+            id="app-shell-profile-menu"
+            className={menuOpen ? styles.profileMenuOpen : styles.profileMenu}
+            role="menu"
+          >
+            <div className={styles.menuSection}>
+              <span className={styles.menuLabel}>{session?.user?.name ?? "Invité"}</span>
+              {syncing || lastSync || syncError ? (
+                <SyncBadge
+                  syncing={syncing}
+                  lastSync={lastSync}
+                  error={syncError}
+                  onSync={() => syncNow()}
+                  disabled={syncing || !isAuthenticated}
+                />
+              ) : null}
+            </div>
+            <nav aria-label="Navigation principale" className={styles.menuSection}>
+              {NAVIGATION.map(({ href, label, Icon }) => (
+                <Link key={href} href={href} role="menuitem" data-active={active === href || undefined}>
+                  <Icon aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              ))}
+            </nav>
+            <div className={styles.menuSection}>
+              {isAuthenticated ? (
+                <button type="button" role="menuitem" onClick={() => requestSignOut()}>
+                  <ArrowRightOnRectangleIcon aria-hidden="true" />
+                  <span>Se déconnecter</span>
+                </button>
+              ) : (
+                <button type="button" role="menuitem" onClick={() => requestSignIn()} disabled={loadingSession}>
+                  <ArrowRightOnRectangleIcon aria-hidden="true" />
+                  <span>{loadingSession ? "Connexion…" : "Connexion Google"}</span>
+                </button>
+              )}
+              <Link href="/settings" role="menuitem">
+                <Cog6ToothIcon aria-hidden="true" />
+                <span>Paramètres</span>
               </Link>
-              <Link href="/settings#family" role="menuitem" onClick={() => setSettingsOpen(false)}>
-                Famille & accès
-              </Link>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setSettingsOpen(false);
-                  syncNow({ silent: true });
-                }}
-              >
-                Relancer la synchro
-              </button>
             </div>
           </div>
         </div>
       </header>
 
       <main className={styles.main}>{children}</main>
-
-      <nav className={styles.actionDock} aria-label="Navigation principale">
-        {NAVIGATION.map(({ href, label, Icon }) => (
-          <Link key={href} href={href} className={active === href ? styles.dockItemActive : styles.dockItem}>
-            <Icon aria-hidden="true" className={styles.dockIcon} />
-            <span>{label}</span>
-          </Link>
-        ))}
-      </nav>
-
-      {settingsOpen ? <div className={styles.settingsBackdrop} onClick={() => setSettingsOpen(false)} /> : null}
+      {menuOpen ? <div className={styles.settingsBackdrop} onClick={() => setMenuOpen(false)} /> : null}
 
       <GoogleOneTapPrompt />
     </div>

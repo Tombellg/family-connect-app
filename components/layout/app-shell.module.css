@@ -3,8 +3,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+  background: #0c0c10;
+  color: var(--text-primary);
   overflow: hidden;
 }
 
@@ -15,28 +15,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px clamp(20px, 5vw, 44px);
-  backdrop-filter: blur(18px);
-  background: color-mix(in srgb, rgba(8, 11, 26, 0.92) 90%, transparent);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  gap: 12px;
+  padding: 12px clamp(18px, 5vw, 36px);
+  background: #0c0c10;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: inherit;
   text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 16px;
-  background: rgba(148, 163, 184, 0.06);
-  transition: transform 0.25s ease, background 0.25s ease;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .brand:hover {
   transform: translateY(-1px);
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .brandDot {
@@ -44,18 +42,18 @@
   height: 12px;
   border-radius: 999px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.65);
 }
 
 .brandText {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .brandText strong {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   letter-spacing: 0.02em;
 }
 
@@ -67,34 +65,146 @@
 .topbarActions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  position: relative;
+}
+
+.profileButton {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.profileAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.14);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  overflow: hidden;
+}
+
+.profileAvatar[data-authenticated] {
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--text-primary);
+}
+
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileAvatar span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.profileAvatar svg {
+  width: 26px;
+  height: 26px;
+}
+
+.profileMenu,
+.profileMenuOpen {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(12, 12, 16, 0.98);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  transform-origin: top right;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  z-index: 35;
+}
+
+.profileMenuOpen {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.menuSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menuLabel {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-subtle);
+}
+
+.menuSection a,
+.menuSection button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.menuSection a[data-active],
+.menuSection a:hover,
+.menuSection button:hover {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text-primary);
+}
+
+.menuSection button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.menuSection svg {
+  width: 18px;
+  height: 18px;
 }
 
 .syncChip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  background: rgba(14, 116, 144, 0.18);
+  background: rgba(56, 189, 248, 0.16);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.syncChip:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.6);
-  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
-  color: var(--text-primary);
+  transition: opacity 0.2s ease, background 0.2s ease;
 }
 
 .syncChip[data-error="true"] {
-  border-color: rgba(248, 113, 113, 0.6);
-  background: rgba(248, 113, 113, 0.12);
+  background: rgba(248, 113, 113, 0.2);
   color: #fecaca;
+}
+
+.syncChip:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.25);
+  color: var(--text-primary);
 }
 
 .syncChip:disabled {
@@ -119,133 +229,11 @@
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-.accountCluster {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.primaryButton {
-  background: var(--accent-gradient);
-  border: none;
-  color: #0b1120;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 9px 18px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.primaryButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(14, 165, 233, 0.38);
-}
-
-.primaryButton:disabled {
-  opacity: 0.7;
-  cursor: progress;
-}
-
-.secondaryButton {
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: var(--text-muted);
-  border-radius: 999px;
-  padding: 9px 16px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.secondaryButton:hover {
-  color: var(--text-primary);
-  border-color: rgba(148, 163, 184, 0.45);
-}
-
-.settingsToggle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(15, 23, 42, 0.65);
-  display: grid;
-  place-items: center;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.settingsToggle svg {
-  width: 20px;
-  height: 20px;
-}
-
-.settingsToggle:hover {
-  transform: rotate(12deg);
-  border-color: rgba(56, 189, 248, 0.6);
-  color: var(--text-primary);
-}
-
-.settingsSheet,
-.settingsSheetOpen {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 12px);
-  width: min(280px, calc(100vw - 32px));
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 24px 60px rgba(8, 47, 73, 0.45);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: transform 0.24s ease, opacity 0.24s ease;
-  transform-origin: top right;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-6px) scale(0.97);
-  backdrop-filter: blur(18px);
-  z-index: 35;
-}
-
-.settingsSheetOpen {
-  pointer-events: auto;
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.settingsSheet a,
-.settingsSheet button,
-.settingsSheetOpen a,
-.settingsSheetOpen button {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 12px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.settingsSheet a:hover,
-.settingsSheet button:hover,
-.settingsSheetOpen a:hover,
-.settingsSheetOpen button:hover {
-  color: var(--text-primary);
-  background: rgba(56, 189, 248, 0.12);
-}
-
 .settingsBackdrop {
   position: fixed;
   inset: 0;
-  background: transparent;
+  background: rgba(12, 12, 16, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 30;
 }
 
@@ -254,58 +242,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 32px);
+  padding: clamp(10px, 2vw, 18px);
   overflow: hidden;
-}
-
-.actionDock {
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 6px;
-  padding: 12px clamp(18px, 4vw, 32px);
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(22px);
-  box-shadow: 0 -18px 28px rgba(8, 47, 73, 0.22);
-  width: 100%;
-  position: relative;
-  z-index: 32;
-}
-
-.dockItem,
-.dockItemActive {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 18px;
-  text-decoration: none;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.dockIcon {
-  width: 22px;
-  height: 22px;
-}
-
-.dockItem:hover {
-  transform: translateY(-2px);
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--text-primary);
-}
-
-.dockItemActive {
-  background: rgba(56, 189, 248, 0.18);
-  color: var(--text-primary);
-  font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.28);
 }
 
 .oneTapAnchor {
@@ -316,43 +254,27 @@
 }
 
 @media (max-width: 960px) {
-  .topbar {
-    padding-inline: 18px;
-    gap: 12px;
-  }
-
-  .brand {
-    padding: 6px 10px;
-  }
-
-  .brandText strong {
-    font-size: 0.95rem;
-  }
-
   .brandText span {
     display: none;
   }
 
-  .topbarActions {
-    gap: 10px;
+  .topbar {
+    padding-inline: 16px;
   }
 
-  .syncChip {
-    display: none;
+  .profileAvatar {
+    width: 36px;
+    height: 36px;
   }
 
-  .secondaryButton {
-    padding-inline: 12px;
+  .profileMenu,
+  .profileMenuOpen {
+    right: 8px;
+    width: min(280px, calc(100vw - 24px));
   }
 
   .main {
-    padding: clamp(16px, 5vw, 28px);
-  }
-
-  .actionDock {
-    padding: 14px clamp(20px, 6vw, 36px);
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    gap: 8px;
+    padding: clamp(8px, 4vw, 16px);
   }
 }
 
