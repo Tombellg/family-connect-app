@@ -4,6 +4,7 @@
   gap: clamp(22px, 5vw, 36px);
   height: 100%;
   min-height: 0;
+  flex: 1;
   overflow: auto;
   padding-right: clamp(6px, 2vw, 16px);
 }

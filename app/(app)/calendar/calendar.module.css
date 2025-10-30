@@ -4,6 +4,8 @@
   gap: clamp(12px, 3vw, 20px);
   height: 100%;
   min-height: 0;
+  flex: 1;
+  width: 100%;
 }
 
 .sidebar {

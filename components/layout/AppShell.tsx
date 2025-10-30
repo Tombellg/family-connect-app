@@ -7,7 +7,7 @@ import { CalendarDaysIcon, CheckCircleIcon, Cog6ToothIcon } from "@heroicons/rea
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./app-shell.module.css";
 
-type IconComponent = (props: React.SVGProps<SVGSVGElement>) => JSX.Element;
+type IconComponent = typeof CheckCircleIcon;
 
 const NAVIGATION: { href: string; label: string; Icon: IconComponent }[] = [
   { href: "/tasks", label: "Tâches", Icon: CheckCircleIcon },
