@@ -1,18 +1,74 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./overview.module.css";
 
-type PreviewMode = "tasks" | "calendar";
+type Insight = {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+};
+
+const ArrowIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M7 17l7-7-7-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+  </svg>
+);
+
+const TaskGlyph = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M9 11l2 2 4-4M6 5h12a1 1 0 011 1v12a1 1 0 01-1 1H6a1 1 0 01-1-1V6a1 1 0 011-1z"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+    />
+  </svg>
+);
+
+const CalendarGlyph = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M7 3v2m10-2v2M5 8h14M6 5h12a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2zm2 5h2v2H8z"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+    />
+  </svg>
+);
 
 function formatDueLabel(dateIso?: string) {
   if (!dateIso) {
     return "Sans échéance";
   }
   const target = new Date(dateIso);
-  return target.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  return target.toLocaleDateString("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatEventTime(dateIso?: string | null, isAllDay?: boolean) {
+  if (!dateIso) {
+    return "Toute la journée";
+  }
+  const date = new Date(dateIso);
+  if (isAllDay) {
+    return date.toLocaleDateString("fr-FR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  }
+  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function OverviewPage() {
@@ -23,22 +79,14 @@ export default function OverviewPage() {
     const flattened = taskLists.flatMap((list) => list.tasks);
     const total = flattened.length;
     const completed = flattened.filter((task) => task.status === "completed").length;
-    const now = new Date();
     const overdue = flattened.filter((task) => {
       if (!task.due?.iso || task.status === "completed") {
         return false;
       }
-      return new Date(task.due.iso) < now;
+      return new Date(task.due.iso) < new Date();
     });
     return { totalTasks: total, completedTasks: completed, overdueTasks: overdue };
   }, [taskLists]);
-
-  const upcomingEvents = useMemo(() => {
-    return [...events]
-      .filter((event) => Boolean(event.start.iso))
-      .sort((a, b) => new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime())
-      .slice(0, 5);
-  }, [events]);
 
   const nextTasks = useMemo(() => {
     return taskLists
@@ -52,8 +100,49 @@ export default function OverviewPage() {
         if (!b.due?.iso) return -1;
         return new Date(a.due.iso).getTime() - new Date(b.due.iso).getTime();
       })
-      .slice(0, 6);
+      .slice(0, 5);
   }, [taskLists]);
+
+  const upcomingEvents = useMemo(() => {
+    return [...events]
+      .filter((event) => Boolean(event.start.iso))
+      .sort((a, b) => new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime())
+      .slice(0, 5);
+  }, [events]);
+
+  const lastSyncLabel = useMemo(() => {
+    if (syncing) {
+      return "Synchronisation en cours";
+    }
+    if (!lastSync) {
+      return "Jamais synchronisé";
+    }
+    return `Synchronisé le ${lastSync.toLocaleDateString("fr-FR", { dateStyle: "medium" })}`;
+  }, [lastSync, syncing]);
+
+  const insights: Insight[] = useMemo(() => {
+    const completion = totalTasks ? Math.round((completedTasks / Math.max(totalTasks, 1)) * 100) : 0;
+    return [
+      {
+        id: "completion",
+        label: "Progression",
+        value: `${completion}%`,
+        detail: completion >= 80 ? "Très bon rythme" : "Cap sur vos objectifs",
+      },
+      {
+        id: "upcoming",
+        label: "Évènements",
+        value: `${upcomingEvents.length}`,
+        detail: upcomingEvents.length ? "Restez prêts" : "Agenda calme",
+      },
+      {
+        id: "overdue",
+        label: "À rattraper",
+        value: `${overdueTasks.length}`,
+        detail: overdueTasks.length ? "Quelques tâches en attente" : "Aucun retard",
+      },
+    ];
+  }, [completedTasks, overdueTasks.length, totalTasks, upcomingEvents.length]);
 
   const lastSyncLabel = useMemo(() => {
     if (!lastSync) {
@@ -64,150 +153,97 @@ export default function OverviewPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.heroContent}>
-          <span className={styles.heroBadge}>{syncing ? "Synchronisation en cours" : lastSyncLabel}</span>
-          <h1>Votre cockpit familial</h1>
-          <p>
-            Une vision claire de la semaine et des actions immédiates pour garder votre foyer parfaitement aligné.
-            Naviguez librement entre vos tâches et votre calendrier en un geste.
-          </p>
-          <div className={styles.modeSwitcher} role="tablist" aria-label="Choisir une vue à explorer">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "tasks"}
-              className={mode === "tasks" ? styles.switchActive : styles.switchButton}
-              onClick={() => setMode("tasks")}
-            >
-              Tâches
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "calendar"}
-              className={mode === "calendar" ? styles.switchActive : styles.switchButton}
-              onClick={() => setMode("calendar")}
-            >
-              Calendrier
-            </button>
-          </div>
-          <div className={styles.ctaRow}>
-            <Link href="/tasks" className={styles.ctaPrimary}>
-              Ouvrir les tâches
-            </Link>
-            <Link href="/calendar" className={styles.ctaSecondary}>
-              Voir le calendrier
-            </Link>
-          </div>
-        </div>
-        <div className={styles.heroStats}>
-          <div>
-            <span>Total de tâches</span>
-            <strong>{totalTasks}</strong>
-          </div>
-          <div>
-            <span>Terminées</span>
-            <strong>{completedTasks}</strong>
-          </div>
-          <div>
-            <span>Évènements à venir</span>
-            <strong>{events.length}</strong>
-          </div>
-          <div>
-            <span>Tâches en retard</span>
-            <strong>{overdueTasks.length}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.metrics}>
-        <article className={styles.metricCard}>
-          <header>
-            <span>Progression générale</span>
-            <strong>{totalTasks ? Math.round((completedTasks / Math.max(totalTasks, 1)) * 100) : 0}%</strong>
-          </header>
-          <p>Suivez l&apos;avancement global de vos listes Google Tasks.</p>
-        </article>
-        <article className={styles.metricCard}>
-          <header>
-            <span>Rendez-vous</span>
-            <strong>{upcomingEvents.length}</strong>
-          </header>
-          <p>Les 5 prochains évènements Google Calendar s&apos;affichent ci-dessous.</p>
-        </article>
-        <article className={styles.metricCard}>
-          <header>
-            <span>Équilibre</span>
-            <strong>{taskLists.length}</strong>
-          </header>
-          <p>Listes synchronisées pour organiser votre quotidien en famille.</p>
-        </article>
-      </section>
-
-      <section className={styles.previewSection}>
-        <header>
-          <h2>{mode === "tasks" ? "Aperçu des tâches" : "Calendrier visuel"}</h2>
-          <span>
-            {mode === "tasks"
-              ? "Un résumé épuré pour terminer les prochaines actions"
-              : "Votre mois en un clin d’œil avec les évènements et tâches clés"}
-          </span>
+      <section className={styles.deckWrapper}>
+        <header className={styles.deckHeader}>
+          <span>Tableau de bord familial</span>
+          <span>{lastSyncLabel}</span>
         </header>
-
-        <div className={styles.previewBoard}>
-          {mode === "tasks" ? (
-            <ul className={styles.taskPreview}>
+        <div className={styles.deckScroller}>
+          <article className={styles.deckCard}>
+            <div className={styles.cardTop}>
+              <TaskGlyph />
+              <span>Actions immédiates</span>
+            </div>
+            <ul className={styles.compactList}>
               {nextTasks.map((task) => (
                 <li key={task.id}>
-                  <span className={styles.taskIcon} aria-hidden="true">◻️</span>
-                  <div>
-                    <strong>{task.title}</strong>
-                    <span>
-                      {task.listTitle}
-                      {task.due?.iso ? ` · ${formatDueLabel(task.due.iso)}` : ""}
-                    </span>
-                  </div>
+                  <strong>{task.title}</strong>
+                  <span>
+                    {task.listTitle}
+                    {task.due?.iso ? ` · ${formatDueLabel(task.due.iso)}` : ""}
+                  </span>
                 </li>
               ))}
-              {!nextTasks.length ? (
-                <li className={styles.empty}>Aucune tâche à afficher. Créez-en une depuis la vue Tâches.</li>
-              ) : null}
+              {!nextTasks.length ? <li className={styles.empty}>Tout est à jour. Ajoutez une tâche depuis la vue dédiée.</li> : null}
             </ul>
-          ) : (
-            <div className={styles.calendarPreview}>
+            <Link href="/tasks" className={styles.cardLink}>
+              Ouvrir les tâches
+              <ArrowIcon />
+            </Link>
+          </article>
+          <article className={styles.deckCard}>
+            <div className={styles.cardTop}>
+              <CalendarGlyph />
+              <span>Agenda partagé</span>
+            </div>
+            <ul className={styles.compactList}>
               {upcomingEvents.map((event) => (
-                <article key={event.id}>
-                  <header>
-                    <span>
-                      {event.start.iso
-                        ? new Date(event.start.iso).toLocaleDateString("fr-FR", {
-                            weekday: "short",
-                            day: "numeric",
-                            month: "short",
-                          })
-                        : "Sans date"}
-                    </span>
-                    <strong>{event.summary}</strong>
-                  </header>
-                  <p>
-                    {event.isAllDay
-                      ? "Journée complète"
-                      : event.start.iso
-                      ? new Date(event.start.iso).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "Sans horaire"}
-                  </p>
-                  {event.location ? <footer>{event.location}</footer> : null}
-                </article>
+                <li key={event.id}>
+                  <strong>{event.summary}</strong>
+                  <span>{formatEventTime(event.start.iso, event.isAllDay)}</span>
+                </li>
               ))}
               {!upcomingEvents.length ? (
-                <p className={styles.empty}>Aucun évènement planifié. Ajoutez-en un depuis la vue Calendrier.</p>
+                <li className={styles.empty}>Aucun évènement planifié. Créez le prochain depuis le calendrier.</li>
               ) : null}
+            </ul>
+            <Link href="/calendar" className={styles.cardLink}>
+              Voir le calendrier
+              <ArrowIcon />
+            </Link>
+          </article>
+          <article className={styles.deckCard}>
+            <div className={styles.cardTop}>
+              <span className={styles.pill}>Synthèse</span>
+              <span>Équilibre du foyer</span>
             </div>
-          )}
+            <ul className={styles.insightList}>
+              {insights.map((insight) => (
+                <li key={insight.id}>
+                  <span>{insight.label}</span>
+                  <strong>{insight.value}</strong>
+                  <small>{insight.detail}</small>
+                </li>
+              ))}
+            </ul>
+            <div className={styles.familySummary}>
+              <span>{taskLists.length} listes connectées</span>
+              <span>{events.length} évènements synchronisés</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className={styles.quickActions}>
+        <header>
+          <span>Navigation rapide</span>
+          <div className={styles.quickHint}>Glissez pour parcourir l’accueil</div>
+        </header>
+        <div className={styles.quickGrid}>
+          <Link href="/tasks" className={styles.quickTile}>
+            <TaskGlyph />
+            <div>
+              <strong>Listes de tâches</strong>
+              <span>Composer et clôturer en un geste</span>
+            </div>
+          </Link>
+          <Link href="/calendar" className={styles.quickTile}>
+            <CalendarGlyph />
+            <div>
+              <strong>Calendrier visuel</strong>
+              <span>Évènements, tâches et recherches</span>
+            </div>
+          </Link>
         </div>
       </section>
     </div>

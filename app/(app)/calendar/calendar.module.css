@@ -1,226 +1,338 @@
-.page {
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.sidebar,
+.sidebarCollapsed {
+  position: sticky;
+  top: 110px;
+  align-self: start;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(26px);
+  box-shadow: 0 28px 48px rgba(8, 47, 73, 0.32);
+  transition: width 0.28s ease, padding 0.28s ease;
+}
+
+.sidebar {
+  padding: 18px;
+}
+
+.sidebarCollapsed {
+  width: 92px;
+  padding: 18px 14px;
+}
+
+.collapseButton {
+  border: none;
+  background: rgba(2, 6, 23, 0.45);
+  border-radius: 12px;
+  padding: 6px 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.collapseButton:hover {
+  transform: translateY(-2px);
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--text-primary);
+}
+
+.sidebarInner {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.createButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.createButton span[aria-hidden="true"] {
+  font-size: 1.2rem;
+}
+
+.composer {
+  display: grid;
+  gap: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.42);
+  padding: 14px;
+}
+
+.composer label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.composer input,
+.composer textarea,
+.composer select {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  padding: 8px 10px;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.composer textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.inlineToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.timeRow {
+  display: flex;
+  gap: 8px;
+}
+
+.composer button[type="submit"] {
+  margin-top: 4px;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: var(--accent-gradient);
+  color: #0b1120;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(14, 165, 233, 0.32);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.composer button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.4);
+}
+
+.formMessage {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+}
+
+.sourceFilters {
+  display: grid;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.sourceFilters span {
+  font-size: 0.8rem;
+}
+
+.sourceFilters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 6px 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sourceFilters input {
+  accent-color: var(--accent);
+}
+
+.filterActive {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text-primary);
+}
+
+.filterDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.4);
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.mainArea {
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 4vw, 40px);
+  gap: 18px;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.64);
+  padding: 22px clamp(18px, 4vw, 36px);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 44px rgba(8, 47, 73, 0.28);
 }
 
-.header {
+.topBar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: clamp(1.9rem, 3vw, 2.6rem);
+.monthSelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
-.header p {
-  margin: 8px 0 0;
+.monthSelector button {
+  border: none;
+  border-radius: 12px;
+  padding: 6px 10px;
+  background: rgba(2, 6, 23, 0.45);
   color: var(--text-muted);
-  max-width: 48ch;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.monthSelector button:hover {
+  transform: translateY(-2px);
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--text-primary);
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.searchBox input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.85rem;
+  outline: none;
 }
 
 .viewToggle {
   display: inline-flex;
-  background: rgba(15, 23, 42, 0.65);
+  gap: 8px;
+  background: rgba(2, 6, 23, 0.5);
   border-radius: 999px;
   padding: 4px;
-  gap: 4px;
 }
 
 .viewToggle button {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  padding: 8px 16px;
   border-radius: 999px;
-  font-weight: 600;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.viewToggle button:hover,
-.viewActive {
+.viewToggle button:hover {
   color: var(--text-primary);
 }
 
 .viewActive {
-  background: rgba(56, 189, 248, 0.25);
-}
-
-.eventComposer {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(8, 12, 24, 0.7);
-  border-radius: calc(var(--density-radius) + 6px);
-  display: grid;
-  gap: 12px;
-  padding: clamp(18px, 3vw, 28px);
-}
-
-.eventRow {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-}
-
-.eventRow label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--text-subtle);
-  font-size: 0.9rem;
-}
-
-.eventRow input,
-.eventExtras input,
-.eventExtras textarea {
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(2, 6, 23, 0.55);
-  color: inherit;
-  padding: 10px 12px;
-}
-
-.eventRow button[type="submit"] {
-  align-self: end;
-  border: none;
-  border-radius: 12px;
-  padding: 10px 18px;
-  background: var(--accent-gradient);
-  color: #0b1120;
-  font-weight: 600;
-  box-shadow: 0 12px 28px rgba(14, 165, 233, 0.28);
-}
-
-.eventExtras {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.eventExtras textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-.formMessage {
-  color: var(--text-subtle);
-  font-size: 0.85rem;
-}
-
-.allDayToggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--text-subtle);
-}
-
-.sourceFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.sourceFilters label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(8, 12, 24, 0.6);
-  color: var(--text-muted);
-}
-
-.filterActive {
-  border-color: rgba(56, 189, 248, 0.4) !important;
+  background: rgba(56, 189, 248, 0.2) !important;
   color: var(--text-primary) !important;
 }
 
-.sourceFilters input {
-  accent-color: #0ea5e9;
-}
-
-.filterDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(56, 189, 248, 0.6);
-  display: inline-block;
-}
-
 .monthView {
-  position: relative;
-  border-radius: calc(var(--density-radius) + 6px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(2, 6, 23, 0.7);
-  padding: clamp(16px, 3vw, 28px);
   display: grid;
   grid-template-columns: 1fr minmax(220px, 260px);
-  gap: 24px;
-}
-
-.monthHeader {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.monthHeader h2 {
-  margin: 0;
-  text-transform: capitalize;
-}
-
-.monthHeader button {
-  border: none;
-  background: rgba(15, 23, 42, 0.6);
-  color: var(--text-muted);
-  border-radius: 999px;
-  padding: 6px 12px;
+  gap: 18px;
 }
 
 .weekDays {
-  grid-column: 1 / 2;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  text-align: right;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
   color: var(--text-subtle);
-  margin-bottom: 6px;
+  gap: 4px;
+}
+
+.weekDays span {
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.4);
+  text-align: center;
 }
 
 .grid {
-  grid-column: 1 / 2;
   display: grid;
+  grid-template-rows: repeat(6, 1fr);
   gap: 4px;
 }
 
 .weekRow {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
 .dayCell {
-  min-height: 120px;
-  background: rgba(8, 12, 24, 0.55);
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  padding: 8px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.45);
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  gap: 8px;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.dayCell header {
-  display: flex;
-  justify-content: flex-end;
-  font-size: 0.8rem;
-  color: var(--text-subtle);
+.dayCell:hover {
+  transform: translateY(-2px);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.dayCell header span {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.dayMuted {
+  opacity: 0.5;
+}
+
+.daySelected {
+  box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.35);
 }
 
 .dayCell ul {
@@ -228,61 +340,58 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .dayCell li button {
   width: 100%;
-  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 12px;
-  padding: 6px 8px;
-  background: rgba(15, 23, 42, 0.5);
-  color: inherit;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.55);
+  padding: 8px 10px;
   display: grid;
-  gap: 2px;
+  gap: 4px;
+  color: inherit;
   text-align: left;
-  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dayCell li button:hover {
+  transform: translateX(2px);
+  border-color: rgba(56, 189, 248, 0.4);
 }
 
 .dayCell li button span {
+  font-size: 0.72rem;
   color: var(--text-subtle);
-  font-size: 0.75rem;
 }
 
 .dayCell li button strong {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.dayMuted {
-  opacity: 0.45;
-}
-
-.daySelected {
-  border-color: rgba(56, 189, 248, 0.5);
-  background: rgba(14, 165, 233, 0.18);
+  font-size: 0.82rem;
 }
 
 .dayDetails {
-  border-left: 1px solid rgba(148, 163, 184, 0.16);
-  padding-left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.45);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
 }
 
 .dayDetails h3 {
   margin: 0;
-  font-size: 1.1rem;
-  text-transform: capitalize;
+  font-size: 0.95rem;
 }
 
 .dayDetails ul {
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
   display: grid;
   gap: 8px;
+  font-size: 0.8rem;
 }
 
 .dayDetails li {
@@ -290,110 +399,106 @@
   gap: 4px;
   padding: 8px 10px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.55);
-}
-
-.dayDetails li span {
-  font-size: 0.85rem;
-  color: var(--text-subtle);
-}
-
-.dayDetails li small {
-  color: var(--text-muted);
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .agendaView {
-  border-radius: calc(var(--density-radius) + 4px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(8, 12, 24, 0.6);
-  padding: clamp(18px, 3vw, 26px);
   display: grid;
   gap: 18px;
 }
 
-.agendaView article h3 {
-  margin: 0 0 10px;
-  text-transform: capitalize;
+.agendaView article {
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.42);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.agendaView h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .agendaView ul {
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .agendaView li {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  align-items: center;
   gap: 12px;
-  align-items: start;
-  background: rgba(15, 23, 42, 0.55);
+  padding: 10px 12px;
   border-radius: 14px;
-  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .timeBadge {
-  font-size: 0.8rem;
-  color: var(--text-subtle);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 6px 10px;
   border-radius: 999px;
-  padding: 4px 10px;
+  background: rgba(56, 189, 248, 0.16);
+  font-size: 0.72rem;
+  color: var(--text-primary);
 }
 
 .popover {
   position: absolute;
-  transform: translate(-50%, 0);
-  background: rgba(2, 6, 23, 0.92);
+  transform: translateX(-50%);
+  border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.9);
   padding: 12px 16px;
-  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.4);
   display: grid;
   gap: 6px;
-  z-index: 80;
+  color: var(--text-primary);
   min-width: 220px;
-}
-
-.popover strong {
-  font-size: 0.95rem;
+  box-shadow: 0 20px 40px rgba(8, 47, 73, 0.4);
+  z-index: 45;
 }
 
 .popover span {
+  font-size: 0.78rem;
   color: var(--text-subtle);
-  font-size: 0.85rem;
 }
 
 .popover small {
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-size: 0.8rem;
 }
 
 .empty {
-  color: var(--text-subtle);
-  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1080px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .sidebarCollapsed {
+    position: static;
+    width: auto;
+    padding: 16px;
+    order: 2;
+  }
+
+  .mainArea {
+    order: 1;
+  }
+
   .monthView {
     grid-template-columns: 1fr;
   }
 
   .dayDetails {
-    border-left: none;
-    border-top: 1px solid rgba(148, 163, 184, 0.16);
-    padding-left: 0;
-    padding-top: 16px;
-  }
-}
-
-@media (max-width: 760px) {
-  .header {
-    flex-direction: column;
-  }
-
-  .eventRow {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    order: -1;
   }
 }
