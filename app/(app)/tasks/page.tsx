@@ -213,7 +213,7 @@ export default function TasksPage() {
     setDraft((current) => ({ ...current, recurrence: createBaseRecurrence(frequency, current.due) }));
   };
 
-  const setDueFromToday = (days: number) => {
+  const applyDueOffset = (days: number) => {
     const date = new Date();
     date.setDate(date.getDate() + days);
     setDraft((current) => ({ ...current, due: date }));
@@ -224,12 +224,6 @@ export default function TasksPage() {
       return;
     }
     await toggleTaskStatus(selectedList.id, taskId, status);
-  };
-
-  const setDueFromToday = (days: number) => {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    setDraft((current) => ({ ...current, due: date }));
   };
 
   return (
@@ -295,11 +289,11 @@ export default function TasksPage() {
             </label>
 
             <div className={styles.quickActions}>
-              <button type="button" onClick={() => setDueFromToday(0)}>
+              <button type="button" onClick={() => applyDueOffset(0)}>
                 <LightningIcon />
                 Aujourd’hui
               </button>
-              <button type="button" onClick={() => setDueFromToday(1)}>
+              <button type="button" onClick={() => applyDueOffset(1)}>
                 <LightningIcon />
                 Demain
               </button>

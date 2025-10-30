@@ -110,7 +110,7 @@ export default function OverviewPage() {
       .slice(0, 5);
   }, [events]);
 
-  const lastSyncLabel = useMemo(() => {
+  const syncStatusLabel = useMemo(() => {
     if (syncing) {
       return "Synchronisation en cours";
     }
@@ -144,19 +144,12 @@ export default function OverviewPage() {
     ];
   }, [completedTasks, overdueTasks.length, totalTasks, upcomingEvents.length]);
 
-  const lastSyncLabel = useMemo(() => {
-    if (!lastSync) {
-      return "Jamais synchronisé";
-    }
-    return `Synchronisé le ${lastSync.toLocaleDateString("fr-FR", { dateStyle: "medium" })}`;
-  }, [lastSync]);
-
   return (
     <div className={styles.page}>
       <section className={styles.deckWrapper}>
         <header className={styles.deckHeader}>
           <span>Tableau de bord familial</span>
-          <span>{lastSyncLabel}</span>
+          <span>{syncStatusLabel}</span>
         </header>
         <div className={styles.deckScroller}>
           <article className={styles.deckCard}>
