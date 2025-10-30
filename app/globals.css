@@ -3,14 +3,23 @@
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --bg-primary: radial-gradient(circle at 20% -10%, rgba(37, 99, 235, 0.18), transparent 45%),
     radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.22), transparent 52%),
-    linear-gradient(180deg, #020617 0%, #020617 40%, #0f172a 100%);
+    linear-gradient(180deg, #010314 0%, #020617 45%, #0f172a 100%);
   --text-primary: #f8fafc;
-  --text-muted: rgba(226, 232, 240, 0.7);
+  --text-muted: rgba(226, 232, 240, 0.72);
+  --text-subtle: rgba(148, 163, 184, 0.72);
   --surface: rgba(15, 23, 42, 0.65);
   --surface-strong: rgba(15, 23, 42, 0.85);
-  --surface-border: rgba(148, 163, 184, 0.2);
+  --surface-elevated: rgba(15, 23, 42, 0.92);
+  --surface-border: rgba(148, 163, 184, 0.18);
   --accent: #38bdf8;
   --accent-strong: #0ea5e9;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --density-gap: 16px;
+  --density-padding: 18px;
+  --density-radius: 18px;
+  --density-line: 22px;
+  --card-shadow: 0 12px 40px rgba(15, 23, 42, 0.28);
+  --glass-blur: saturate(180%) blur(26px);
 }
 
 *,
@@ -45,12 +54,23 @@ textarea {
   color: inherit;
 }
 
-:focus {
+:focus-visible {
   outline-color: var(--accent-strong);
+  outline-offset: 2px;
 }
 
 html,
 body,
 #__next {
   width: 100%;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(56, 189, 248, 0.08), rgba(14, 165, 233, 0.05));
+  opacity: 0.65;
+  z-index: -1;
 }
