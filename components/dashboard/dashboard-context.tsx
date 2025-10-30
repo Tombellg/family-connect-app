@@ -45,6 +45,15 @@ export type DashboardContextValue = {
     due?: string | null;
     recurrence?: RecurrenceState | null;
   }) => Promise<void>;
+  createEvent: (payload: {
+    summary: string;
+    date: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    allDay?: boolean;
+    location?: string;
+    description?: string;
+  }) => Promise<void>;
   toggleTaskStatus: (listId: string, taskId: string, status: "needsAction" | "completed") => Promise<void>;
 };
 
@@ -341,19 +350,159 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [events, lastSync, persistData]
   );
 
+  const createEvent = useCallback(
+    async ({
+      summary,
+      date,
+      startTime,
+      endTime,
+      allDay,
+      location,
+      description,
+    }: {
+      summary: string;
+      date: string;
+      startTime?: string | null;
+      endTime?: string | null;
+      allDay?: boolean;
+      location?: string;
+      description?: string;
+    }) => {
+      if (!summary.trim()) {
+        throw new Error("Le titre de l'évènement est requis");
+      }
+
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const toDateTime = (time?: string | null) => {
+        const [hours, minutes] = (time ?? "00:00").split(":");
+        const base = new Date(date);
+        base.setHours(Number.parseInt(hours ?? "0", 10));
+        base.setMinutes(Number.parseInt(minutes ?? "0", 10));
+        base.setSeconds(0, 0);
+        return base;
+      };
+
+      const start = toDateTime(startTime ?? undefined);
+      let end: Date;
+
+      if (allDay || !startTime) {
+        const startDate = new Date(date);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
+        try {
+          const response = await fetch("/api/google/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              summary,
+              description: description || undefined,
+              location: location || undefined,
+              allDay: true,
+              startDate: date,
+              endDate: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(
+                endDate.getDate()
+              ).padStart(2, "0")}`,
+              timeZone,
+            }),
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            throw new Error(payload?.message ?? "Impossible de créer l'évènement");
+          }
+          const { event } = (await response.json()) as { event: FormattedCalendarEvent };
+          setEvents((current) => {
+            const next = [event, ...current].sort(
+              (a, b) =>
+                new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime()
+            );
+            persistData({ events: next, taskLists, lastSync });
+            return next;
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Impossible de créer l'évènement";
+          setSyncError(message);
+          throw error;
+        }
+        return;
+      }
+
+      end = endTime ? toDateTime(endTime) : new Date(start.getTime() + 60 * 60 * 1000);
+
+      if (end <= start) {
+        end = new Date(start.getTime() + 30 * 60 * 1000);
+      }
+
+      try {
+        const response = await fetch("/api/google/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            summary,
+            description: description || undefined,
+            location: location || undefined,
+            allDay: false,
+            startIso: start.toISOString(),
+            endIso: end.toISOString(),
+            timeZone,
+          }),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message ?? "Impossible de créer l'évènement");
+        }
+        const { event } = (await response.json()) as { event: FormattedCalendarEvent };
+        setEvents((current) => {
+          const next = [event, ...current].sort(
+            (a, b) => new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime()
+          );
+          persistData({ events: next, taskLists, lastSync });
+          return next;
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Impossible de créer l'évènement";
+        setSyncError(message);
+        throw error;
+      }
+    },
+    [lastSync, persistData, taskLists]
+  );
+
   useEffect(() => {
     const accent = ACCENT_MAP[settings.accent];
     document.documentElement.style.setProperty("--accent", accent.solid);
     document.documentElement.style.setProperty("--accent-gradient", accent.gradient);
-    document.documentElement.style.setProperty("--density-gap", settings.density === "tight" ? "8px" : settings.density === "balance" ? "14px" : "20px");
+    document.documentElement.style.setProperty(
+      "--density-gap",
+      settings.density === "tight" ? "8px" : settings.density === "balance" ? "14px" : "20px"
+    );
     document.documentElement.style.setProperty(
       "--density-radius",
       settings.density === "tight" ? "10px" : settings.density === "balance" ? "16px" : "22px"
     );
-    document.documentElement.style.setProperty("--surface", settings.glassEffect ? "rgba(15, 23, 42, 0.65)" : "rgba(15, 23, 42, 0.9)");
+    document.documentElement.style.setProperty(
+      "--density-padding",
+      settings.density === "tight" ? "12px" : settings.density === "balance" ? "18px" : "24px"
+    );
+    document.documentElement.style.setProperty(
+      "--density-line",
+      settings.density === "tight" ? "20px" : settings.density === "balance" ? "24px" : "28px"
+    );
+    document.documentElement.style.setProperty(
+      "--surface",
+      settings.glassEffect ? "rgba(15, 23, 42, 0.65)" : "rgba(15, 23, 42, 0.9)"
+    );
     document.documentElement.style.setProperty(
       "--surface-strong",
       settings.glassEffect ? "rgba(15, 23, 42, 0.82)" : "rgba(15, 23, 42, 0.95)"
+    );
+    document.documentElement.style.setProperty(
+      "--surface-elevated",
+      settings.glassEffect ? "rgba(15, 23, 42, 0.92)" : "rgba(15, 23, 42, 0.98)"
+    );
+    document.documentElement.style.setProperty(
+      "--glass-blur",
+      settings.glassEffect ? "saturate(180%) blur(26px)" : "none"
     );
   }, [settings]);
 
@@ -377,6 +526,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       removeFamilyMember,
       saveFamilyMember,
       createTask,
+      createEvent,
       toggleTaskStatus,
     }),
     [
@@ -396,6 +546,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       removeFamilyMember,
       saveFamilyMember,
       createTask,
+      createEvent,
       toggleTaskStatus,
     ]
   );

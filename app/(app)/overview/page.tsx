@@ -1,133 +1,213 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./overview.module.css";
 
+type PreviewMode = "tasks" | "calendar";
+
+function formatDueLabel(dateIso?: string) {
+  if (!dateIso) {
+    return "Sans échéance";
+  }
+  const target = new Date(dateIso);
+  return target.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+}
+
 export default function OverviewPage() {
   const { taskLists, events, syncing, lastSync } = useDashboard();
+  const [mode, setMode] = useState<PreviewMode>("tasks");
 
-  const { totalTasks, completedTasks } = useMemo(() => {
-    const total = taskLists.reduce((sum, list) => sum + list.tasks.length, 0);
-    const completed = taskLists.reduce(
-      (sum, list) => sum + list.tasks.filter((task) => task.status === "completed").length,
-      0
-    );
-    return { totalTasks: total, completedTasks: completed };
+  const { totalTasks, completedTasks, overdueTasks } = useMemo(() => {
+    const flattened = taskLists.flatMap((list) => list.tasks);
+    const total = flattened.length;
+    const completed = flattened.filter((task) => task.status === "completed").length;
+    const now = new Date();
+    const overdue = flattened.filter((task) => {
+      if (!task.due?.iso || task.status === "completed") {
+        return false;
+      }
+      return new Date(task.due.iso) < now;
+    });
+    return { totalTasks: total, completedTasks: completed, overdueTasks: overdue };
   }, [taskLists]);
 
   const upcomingEvents = useMemo(() => {
     return [...events]
       .filter((event) => Boolean(event.start.iso))
       .sort((a, b) => new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime())
-      .slice(0, 6);
+      .slice(0, 5);
   }, [events]);
 
-  const overdueTasks = useMemo(() => {
-    const today = new Date();
+  const nextTasks = useMemo(() => {
     return taskLists
-      .flatMap((list) => list.tasks)
-      .filter((task) => {
-        if (!task.due?.iso) {
-          return false;
+      .flatMap((list) => list.tasks.map((task) => ({ ...task, listTitle: list.title })))
+      .filter((task) => task.status !== "completed")
+      .sort((a, b) => {
+        if (!a.due?.iso && !b.due?.iso) {
+          return a.title.localeCompare(b.title);
         }
-        const dueDate = new Date(task.due.iso);
-        return task.status !== "completed" && dueDate < today;
+        if (!a.due?.iso) return 1;
+        if (!b.due?.iso) return -1;
+        return new Date(a.due.iso).getTime() - new Date(b.due.iso).getTime();
       })
       .slice(0, 6);
   }, [taskLists]);
 
-  return (
-    <div className={styles.container}>
-      <section className={styles.hero}>
-        <div>
-          <h1>Bonjour !</h1>
-          <p>
-            Voici une vision claire de votre organisation familiale. Toutes les données sont synchronisées
-            automatiquement avec Google Tasks et Google Agenda.
-          </p>
-        </div>
-        <div className={styles.syncCard}>
-          <span className={styles.syncTitle}>État</span>
-          <strong>{syncing ? "Synchronisation…" : "À jour"}</strong>
-          <span className={styles.syncHint}>
-            {lastSync ? `Dernière synchro ${lastSync.toLocaleString("fr-FR")}` : "Aucune synchronisation réalisée"}
-          </span>
-        </div>
-      </section>
+  const lastSyncLabel = useMemo(() => {
+    if (!lastSync) {
+      return "Jamais synchronisé";
+    }
+    return `Synchronisé le ${lastSync.toLocaleDateString("fr-FR", { dateStyle: "medium" })}`;
+  }, [lastSync]);
 
-      <section className={styles.grid}>
-        <article className={styles.metricTile}>
-          <header>
-            <span>Tâches suivies</span>
+  return (
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <span className={styles.heroBadge}>{syncing ? "Synchronisation en cours" : lastSyncLabel}</span>
+          <h1>Votre cockpit familial</h1>
+          <p>
+            Une vision claire de la semaine et des actions immédiates pour garder votre foyer parfaitement aligné.
+            Naviguez librement entre vos tâches et votre calendrier en un geste.
+          </p>
+          <div className={styles.modeSwitcher} role="tablist" aria-label="Choisir une vue à explorer">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "tasks"}
+              className={mode === "tasks" ? styles.switchActive : styles.switchButton}
+              onClick={() => setMode("tasks")}
+            >
+              Tâches
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "calendar"}
+              className={mode === "calendar" ? styles.switchActive : styles.switchButton}
+              onClick={() => setMode("calendar")}
+            >
+              Calendrier
+            </button>
+          </div>
+          <div className={styles.ctaRow}>
+            <Link href="/tasks" className={styles.ctaPrimary}>
+              Ouvrir les tâches
+            </Link>
+            <Link href="/calendar" className={styles.ctaSecondary}>
+              Voir le calendrier
+            </Link>
+          </div>
+        </div>
+        <div className={styles.heroStats}>
+          <div>
+            <span>Total de tâches</span>
             <strong>{totalTasks}</strong>
-          </header>
-          <p>{completedTasks} terminées</p>
-        </article>
-        <article className={styles.metricTile}>
-          <header>
-            <span>Évènements programmés</span>
+          </div>
+          <div>
+            <span>Terminées</span>
+            <strong>{completedTasks}</strong>
+          </div>
+          <div>
+            <span>Évènements à venir</span>
             <strong>{events.length}</strong>
-          </header>
-          <p>6 prochains affichés ci-dessous</p>
-        </article>
-        <article className={styles.metricTile}>
-          <header>
+          </div>
+          <div>
             <span>Tâches en retard</span>
             <strong>{overdueTasks.length}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.metrics}>
+        <article className={styles.metricCard}>
+          <header>
+            <span>Progression générale</span>
+            <strong>{totalTasks ? Math.round((completedTasks / Math.max(totalTasks, 1)) * 100) : 0}%</strong>
           </header>
-          <p>Rattrapez-les dès que possible</p>
+          <p>Suivez l&apos;avancement global de vos listes Google Tasks.</p>
+        </article>
+        <article className={styles.metricCard}>
+          <header>
+            <span>Rendez-vous</span>
+            <strong>{upcomingEvents.length}</strong>
+          </header>
+          <p>Les 5 prochains évènements Google Calendar s&apos;affichent ci-dessous.</p>
+        </article>
+        <article className={styles.metricCard}>
+          <header>
+            <span>Équilibre</span>
+            <strong>{taskLists.length}</strong>
+          </header>
+          <p>Listes synchronisées pour organiser votre quotidien en famille.</p>
         </article>
       </section>
 
-      <section className={styles.columns}>
-        <div className={styles.column}>
-          <header className={styles.columnHeader}>
-            <h2>Prochaines tâches</h2>
-            <span>{taskLists.length} listes</span>
-          </header>
-          <ul className={styles.list}>
-            {taskLists.slice(0, 2).map((list) => (
-              <li key={list.id} className={styles.listBlock}>
-                <strong>{list.title}</strong>
-                <ul>
-                  {list.tasks.slice(0, 5).map((task) => (
-                    <li key={task.id}>
-                      <span className={task.status === "completed" ? styles.completed : undefined}>{task.title}</span>
-                      {task.due?.iso ? (
-                        <small>{new Date(task.due.iso).toLocaleDateString("fr-FR")}</small>
-                      ) : null}
-                    </li>
-                  ))}
-                  {!list.tasks.length ? <li className={styles.empty}>Aucune tâche dans cette liste</li> : null}
-                </ul>
-              </li>
-            ))}
-            {!taskLists.length ? <li className={styles.empty}>Aucune liste synchronisée pour le moment.</li> : null}
-          </ul>
-        </div>
-        <div className={styles.column}>
-          <header className={styles.columnHeader}>
-            <h2>Évènements à venir</h2>
-            <span>{upcomingEvents.length} affichés</span>
-          </header>
-          <ul className={styles.eventList}>
-            {upcomingEvents.map((event) => (
-              <li key={event.id}>
-                <strong>{event.summary}</strong>
-                <span>
-                  {event.start.iso
-                    ? new Date(event.start.iso).toLocaleString("fr-FR", {
-                        dateStyle: "medium",
-                        timeStyle: event.isAllDay ? undefined : "short",
-                      })
-                    : "Sans date"}
-                </span>
-                {event.location ? <small>{event.location}</small> : null}
-              </li>
-            ))}
-            {!upcomingEvents.length ? <li className={styles.empty}>Aucun évènement à afficher.</li> : null}
-          </ul>
+      <section className={styles.previewSection}>
+        <header>
+          <h2>{mode === "tasks" ? "Aperçu des tâches" : "Calendrier visuel"}</h2>
+          <span>
+            {mode === "tasks"
+              ? "Un résumé épuré pour terminer les prochaines actions"
+              : "Votre mois en un clin d’œil avec les évènements et tâches clés"}
+          </span>
+        </header>
+
+        <div className={styles.previewBoard}>
+          {mode === "tasks" ? (
+            <ul className={styles.taskPreview}>
+              {nextTasks.map((task) => (
+                <li key={task.id}>
+                  <span className={styles.taskIcon} aria-hidden="true">◻️</span>
+                  <div>
+                    <strong>{task.title}</strong>
+                    <span>
+                      {task.listTitle}
+                      {task.due?.iso ? ` · ${formatDueLabel(task.due.iso)}` : ""}
+                    </span>
+                  </div>
+                </li>
+              ))}
+              {!nextTasks.length ? (
+                <li className={styles.empty}>Aucune tâche à afficher. Créez-en une depuis la vue Tâches.</li>
+              ) : null}
+            </ul>
+          ) : (
+            <div className={styles.calendarPreview}>
+              {upcomingEvents.map((event) => (
+                <article key={event.id}>
+                  <header>
+                    <span>
+                      {event.start.iso
+                        ? new Date(event.start.iso).toLocaleDateString("fr-FR", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : "Sans date"}
+                    </span>
+                    <strong>{event.summary}</strong>
+                  </header>
+                  <p>
+                    {event.isAllDay
+                      ? "Journée complète"
+                      : event.start.iso
+                      ? new Date(event.start.iso).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Sans horaire"}
+                  </p>
+                  {event.location ? <footer>{event.location}</footer> : null}
+                </article>
+              ))}
+              {!upcomingEvents.length ? (
+                <p className={styles.empty}>Aucun évènement planifié. Ajoutez-en un depuis la vue Calendrier.</p>
+              ) : null}
+            </div>
+          )}
         </div>
       </section>
     </div>

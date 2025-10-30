@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { google } from "googleapis";
-import type { tasks_v1 } from "googleapis";
+import type { calendar_v3, tasks_v1 } from "googleapis";
 
 const GOOGLE_TASK_COLORS: Record<string, string> = {
   "1": "#7986cb",
@@ -43,6 +43,10 @@ function getOAuthClient(tokens: GoogleTokenBundle) {
 
 export function getGoogleTasksClient(tokens: GoogleTokenBundle) {
   return google.tasks({ version: "v1", auth: getOAuthClient(tokens) });
+}
+
+export function getGoogleCalendarClient(tokens: GoogleTokenBundle) {
+  return google.calendar({ version: "v3", auth: getOAuthClient(tokens) });
 }
 
 export async function refreshGoogleAccessToken(refreshToken: string) {
@@ -132,43 +136,42 @@ export type FormattedCalendarEvent = {
   organizer?: string;
 };
 
+export function formatCalendarEvent(event: calendar_v3.Schema$Event): FormattedCalendarEvent {
+  const startDate = event.start?.dateTime ?? event.start?.date ?? null;
+  const endDate = event.end?.dateTime ?? event.end?.date ?? null;
+  const isAllDay = Boolean(event.start?.date && !event.start?.dateTime);
+
+  return {
+    id: event.id ?? randomUUID(),
+    summary: event.summary ?? "Sans titre",
+    location: event.location ?? undefined,
+    description: event.description ?? undefined,
+    isAllDay,
+    start: {
+      label: formatDate(startDate),
+      iso: startDate
+    },
+    end: {
+      label: formatDate(endDate),
+      iso: endDate
+    },
+    organizer: event.organizer?.displayName ?? event.organizer?.email ?? undefined
+  } satisfies FormattedCalendarEvent;
+}
+
 export async function fetchCalendarEvents(tokens: GoogleTokenBundle): Promise<FormattedCalendarEvent[]> {
-  const client = getOAuthClient(tokens);
-  const calendar = google.calendar({ version: "v3", auth: client });
+  const calendar = getGoogleCalendarClient(tokens);
   const now = new Date();
 
   const { data } = await calendar.events.list({
     calendarId: "primary",
-    maxResults: 10,
+    maxResults: 50,
     orderBy: "startTime",
     singleEvents: true,
     timeMin: now.toISOString()
   });
 
-  return (
-    data.items?.map((event) => {
-      const startDate = event.start?.dateTime ?? event.start?.date ?? null;
-      const endDate = event.end?.dateTime ?? event.end?.date ?? null;
-      const isAllDay = Boolean(event.start?.date && !event.start?.dateTime);
-
-      return {
-        id: event.id ?? randomUUID(),
-        summary: event.summary ?? "Sans titre",
-        location: event.location ?? undefined,
-        description: event.description ?? undefined,
-        isAllDay,
-        start: {
-          label: formatDate(startDate),
-          iso: startDate
-        },
-        end: {
-          label: formatDate(endDate),
-          iso: endDate
-        },
-        organizer: event.organizer?.displayName ?? event.organizer?.email ?? undefined
-      } satisfies FormattedCalendarEvent;
-    }) ?? []
-  );
+  return data.items?.map((event) => formatCalendarEvent(event)) ?? [];
 }
 
 export type FormattedTask = {

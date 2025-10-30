@@ -1,186 +1,293 @@
-.container {
+.page {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: clamp(24px, 4vw, 48px);
 }
 
 .hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(20px, 4vw, 40px);
+  align-items: stretch;
+}
+
+.heroContent {
+  padding: var(--density-padding);
+  border-radius: calc(var(--density-radius) + 6px);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(14, 116, 144, 0.1));
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  box-shadow: var(--card-shadow);
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 28px 32px;
-  background: var(--surface-strong);
-  border-radius: var(--density-radius);
-  border: 1px solid var(--surface-border);
+  flex-direction: column;
+  gap: 18px;
 }
 
-.hero h1 {
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  width: fit-content;
+}
+
+.heroContent h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.1;
 }
 
-.hero p {
-  margin: 12px 0 0;
+.heroContent p {
+  margin: 0;
   color: var(--text-muted);
+  max-width: 38ch;
 }
 
-.syncCard {
-  min-width: 220px;
-  background: rgba(15, 23, 42, 0.85);
-  border-radius: var(--density-radius);
-  padding: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  align-self: flex-start;
+.modeSwitcher {
+  display: inline-flex;
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 6px;
+  width: fit-content;
 }
 
-.syncTitle {
+.switchButton,
+.switchActive {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.switchButton:hover {
+  color: var(--text-primary);
+}
+
+.switchActive {
+  background: var(--accent-gradient);
+  color: #0b1120;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ctaPrimary {
+  background: #0ea5e9;
+  color: #0b1120;
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.35);
+}
+
+.ctaSecondary {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--text-muted);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  padding: var(--density-padding);
+  border-radius: calc(var(--density-radius) + 4px);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.heroStats div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.6);
+}
+
+.heroStats span {
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--text-subtle);
 }
 
-.syncCard strong {
-  display: block;
-  margin-top: 12px;
-  font-size: 1.2rem;
+.heroStats strong {
+  font-size: 1.6rem;
 }
 
-.syncHint {
-  display: block;
-  margin-top: 8px;
-  color: var(--text-muted);
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--density-gap);
+}
+
+.metricCard {
+  border-radius: var(--density-radius);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.7);
+  padding: var(--density-padding);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.metricCard header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metricCard header span {
+  color: var(--text-subtle);
   font-size: 0.85rem;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.metricCard header strong {
+  font-size: 1.4rem;
+}
+
+.metricCard p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
-.metricTile {
-  background: rgba(15, 23, 42, 0.82);
-  border-radius: var(--density-radius);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  padding: 20px;
-}
-
-.metricTile header {
+.previewSection header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  color: var(--text-muted);
-}
-
-.metricTile strong {
-  font-size: 1.8rem;
-  color: var(--text-primary);
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-}
-
-.column {
-  background: rgba(15, 23, 42, 0.82);
-  border-radius: var(--density-radius);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  padding: 24px;
-}
-
-.columnHeader {
-  display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: baseline;
-  margin-bottom: 18px;
-  color: var(--text-muted);
-}
-
-.columnHeader h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--text-primary);
-}
-
-.list,
-.eventList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.listBlock {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: var(--density-radius);
-  padding: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+.previewSection header h2 {
+  margin: 0;
+  font-size: 1.4rem;
 }
 
-.listBlock strong {
-  display: block;
-  margin-bottom: 10px;
+.previewSection header span {
+  color: var(--text-subtle);
+  font-size: 0.9rem;
 }
 
-.listBlock ul {
+.previewBoard {
+  border-radius: calc(var(--density-radius) + 6px);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  background: rgba(8, 12, 24, 0.75);
+  padding: clamp(16px, 3vw, 28px);
+  display: grid;
+  gap: 18px;
+}
+
+.taskPreview {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  gap: 12px;
 }
 
-.listBlock li {
-  display: flex;
-  justify-content: space-between;
+.taskPreview li {
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.18);
 }
 
-.listBlock small {
-  color: var(--text-muted);
+.taskPreview strong {
+  display: block;
+  font-size: 1rem;
 }
 
-.eventList li {
+.taskPreview span {
+  color: var(--text-subtle);
+  font-size: 0.85rem;
+}
+
+.taskIcon {
+  font-size: 1.2rem;
+}
+
+.calendarPreview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.calendarPreview article {
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.6);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px;
-  border-radius: var(--density-radius);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(15, 23, 42, 0.6);
+  gap: 10px;
 }
 
-.eventList small {
+.calendarPreview header span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+}
+
+.calendarPreview header strong {
+  font-size: 1rem;
+}
+
+.calendarPreview p {
+  margin: 0;
   color: var(--text-muted);
 }
 
-.completed {
-  text-decoration: line-through;
-  color: var(--text-muted);
+.calendarPreview footer {
+  font-size: 0.85rem;
+  color: var(--text-subtle);
 }
 
 .empty {
-  color: var(--text-muted);
+  margin: 0;
+  color: var(--text-subtle);
   font-style: italic;
 }
 
-@media (max-width: 860px) {
-  .hero {
-    flex-direction: column;
+@media (max-width: 720px) {
+  .heroContent {
+    order: 2;
   }
 
-  .syncCard {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .heroStats {
+    order: 1;
   }
 }
