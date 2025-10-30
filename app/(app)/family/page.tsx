@@ -27,7 +27,7 @@ export default function FamilyPage() {
 
   return (
     <div className={styles.container}>
-      <header>
+      <header className={styles.header}>
         <div>
           <h1>Gestion de la famille</h1>
           <p>Centralisez les membres qui auront accès aux tâches et agendas partagés.</p>

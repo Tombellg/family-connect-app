@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
   return (
     <div className={styles.container}>
-      <header>
+      <header className={styles.header}>
         <h1>Personnalisation</h1>
         <p>Ajustez le thème du tableau de bord pour refléter votre style.</p>
       </header>
