@@ -1,7 +1,17 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, ListBulletIcon, MagnifyingGlassIcon, PlusIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Bars3Icon,
+  CalendarDaysIcon,
+  CheckCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ListBulletIcon,
+  MagnifyingGlassIcon,
+  Squares2X2Icon,
+} from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import type { FormattedTaskList } from "@/lib/google";
 import styles from "./calendar.module.css";
@@ -236,7 +246,12 @@ export default function CalendarPage() {
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [showComposer, setShowComposer] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [composerTarget, setComposerTarget] = useState<string | null>(null);
+  const [composerPosition, setComposerPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const composerFormRef = useRef<HTMLFormElement | null>(null);
+  const dayRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [searchTerm, setSearchTerm] = useState("");
 
   const paletteBySource = useMemo(() => {
@@ -429,6 +444,10 @@ export default function CalendarPage() {
         description: "",
         location: "",
       }));
+      window.setTimeout(() => {
+        setComposerTarget(null);
+        setFormMessage(null);
+      }, 800);
     } catch (error) {
       setFormMessage(error instanceof Error ? error.message : "Impossible d'ajouter l'évènement");
     } finally {
@@ -438,112 +457,95 @@ export default function CalendarPage() {
 
   const changeMonth = (offset: number) => {
     setCurrentMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+    setComposerTarget(null);
+    setFormMessage(null);
   };
 
-  const handleComposerToggle = () => {
+  const handleDaySelect = (cell: MonthCell) => {
+    setSelectedDate(cell.date);
+    setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
+    setComposerTarget((current) => (current === cell.key ? null : cell.key));
     setFormMessage(null);
-    setShowComposer((value) => {
-      const next = !value;
-      if (!value) {
-        setEventDraft((current) => ({ ...current, date: formatDateKey(selectedDate) }));
-      }
-      return next;
-    });
   };
+
+  useLayoutEffect(() => {
+    if (!composerTarget) {
+      setComposerPosition(null);
+      return;
+    }
+    const updatePosition = () => {
+      const target = dayRefs.current.get(composerTarget);
+      const container = gridRef.current;
+      if (!target || !container) {
+        setComposerPosition(null);
+        return;
+      }
+      const targetRect = target.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const width = Math.max(260, targetRect.width + 16);
+      const containerWidth = container.clientWidth;
+      let left = targetRect.left - containerRect.left;
+      if (left + width > containerWidth) {
+        left = Math.max(0, containerWidth - width - 8);
+      }
+      const top = targetRect.bottom - containerRect.top + container.scrollTop + 8;
+      setComposerPosition({ top, left, width });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    const container = gridRef.current;
+    container?.addEventListener("scroll", updatePosition);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      container?.removeEventListener("scroll", updatePosition);
+    };
+  }, [composerTarget, menuOpen]);
+
+  useEffect(() => {
+    if (!composerTarget) {
+      return;
+    }
+    const close = (event: MouseEvent) => {
+      const form = composerFormRef.current;
+      if (!form) {
+        setComposerTarget(null);
+        setFormMessage(null);
+        return;
+      }
+      const targetNode = event.target as Node;
+      if (form.contains(targetNode)) {
+        return;
+      }
+      const dayButton = dayRefs.current.get(composerTarget);
+      if (dayButton?.contains(targetNode)) {
+        return;
+      }
+      setComposerTarget(null);
+      setFormMessage(null);
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setComposerTarget(null);
+        setFormMessage(null);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [composerTarget]);
 
   return (
-    <div className={styles.page}>
-      <aside className={styles.sidebar}>
-        <button
-          type="button"
-          className={styles.primaryAction}
-          onClick={handleComposerToggle}
-          aria-expanded={showComposer}
-        >
-          <PlusIcon aria-hidden="true" />
-          <span>{showComposer ? "Fermer l'éditeur" : "Nouvel évènement"}</span>
-        </button>
-        {showComposer ? (
-          <form className={styles.composer} onSubmit={handleCreateEvent}>
-            <label>
-              <span>Titre</span>
-              <input
-                type="text"
-                value={eventDraft.summary}
-                onChange={(event) => setEventDraft((current) => ({ ...current, summary: event.target.value }))}
-                required
-              />
-            </label>
-            <div className={styles.composerRow}>
-              <label>
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={eventDraft.date}
-                  onChange={(event) => setEventDraft((current) => ({ ...current, date: event.target.value }))}
-                  required
-                />
-              </label>
-              <label className={styles.allDayToggle}>
-                <input
-                  type="checkbox"
-                  checked={eventDraft.allDay}
-                  onChange={(event) => setEventDraft((current) => ({ ...current, allDay: event.target.checked }))}
-                />
-                <span>Toute la journée</span>
-              </label>
-            </div>
-            {!eventDraft.allDay ? (
-              <div className={styles.timeRow}>
-                <label>
-                  <span>Début</span>
-                  <input
-                    type="time"
-                    value={eventDraft.startTime}
-                    onChange={(event) => setEventDraft((current) => ({ ...current, startTime: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Fin</span>
-                  <input
-                    type="time"
-                    value={eventDraft.endTime}
-                    onChange={(event) => setEventDraft((current) => ({ ...current, endTime: event.target.value }))}
-                    required
-                  />
-                </label>
-              </div>
-            ) : null}
-            <label>
-              <span>Lieu</span>
-              <input
-                type="text"
-                value={eventDraft.location}
-                onChange={(event) => setEventDraft((current) => ({ ...current, location: event.target.value }))}
-                placeholder="Lieu"
-              />
-            </label>
-            <label>
-              <span>Notes</span>
-              <textarea
-                value={eventDraft.description}
-                onChange={(event) => setEventDraft((current) => ({ ...current, description: event.target.value }))}
-                placeholder="Notes"
-              />
-            </label>
-            {formMessage ? <p className={styles.formMessage}>{formMessage}</p> : null}
-            <div className={styles.formActions}>
-              <button type="submit" disabled={creatingEvent}>
-                {creatingEvent ? "Ajout…" : "Enregistrer"}
-              </button>
-              <button type="button" data-variant="ghost" onClick={handleComposerToggle}>
-                Fermer
-              </button>
-            </div>
-          </form>
-        ) : null}
-        <div className={styles.sidebarSection}>
+    <div className={styles.page} data-menu-open={menuOpen || undefined}>
+      <aside
+        id="calendar-panel"
+        className={styles.panel}
+        data-open={menuOpen || undefined}
+        aria-hidden={!menuOpen ? true : undefined}
+      >
+        <div className={styles.panelSection}>
           <header className={styles.sectionHeader}>
             <span>Calendrier</span>
             <div className={styles.monthStepper}>
@@ -581,6 +583,10 @@ export default function CalendarPage() {
                       onClick={() => {
                         setSelectedDate(cell.date);
                         setCurrentMonth(new Date(cell.date.getFullYear(), cell.date.getMonth(), 1));
+                        setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
+                        setComposerTarget(null);
+                        setFormMessage(null);
+                        setMenuOpen(false);
                       }}
                     >
                       {cell.date.getDate()}
@@ -591,7 +597,7 @@ export default function CalendarPage() {
             ))}
           </div>
         </div>
-        <div className={styles.sidebarSection}>
+        <div className={styles.panelSection}>
           <header className={styles.sectionHeader}>
             <span>Sources visibles</span>
           </header>
@@ -614,9 +620,19 @@ export default function CalendarPage() {
           </div>
         </div>
       </aside>
-      <section className={styles.content}>
+      {menuOpen ? <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)} /> : null}
+      <section className={styles.workspace}>
         <header className={styles.toolbar}>
-          <div className={styles.toolbarGroup}>
+          <div className={styles.toolbarLeft}>
+            <button
+              type="button"
+              className={styles.menuToggle}
+              onClick={() => setMenuOpen((value) => !value)}
+              aria-expanded={menuOpen}
+              aria-controls="calendar-panel"
+            >
+              <Bars3Icon aria-hidden="true" />
+            </button>
             <span className={styles.monthTitle}>{monthLabel}</span>
             <div className={styles.monthControls}>
               <button type="button" onClick={() => changeMonth(-1)} aria-label="Mois précédent">
@@ -627,7 +643,7 @@ export default function CalendarPage() {
               </button>
             </div>
           </div>
-          <div className={styles.toolbarGroup}>
+          <div className={styles.toolbarCenter}>
             <label className={styles.searchField}>
               <MagnifyingGlassIcon aria-hidden="true" />
               <input
@@ -637,6 +653,8 @@ export default function CalendarPage() {
                 placeholder="Rechercher…"
               />
             </label>
+          </div>
+          <div className={styles.toolbarRight}>
             <div className={styles.viewSwitch} role="tablist">
               <button
                 type="button"
@@ -644,9 +662,9 @@ export default function CalendarPage() {
                 aria-selected={viewMode === "month"}
                 data-active={viewMode === "month" || undefined}
                 onClick={() => setViewMode("month")}
+                aria-label="Vue calendrier"
               >
                 <Squares2X2Icon aria-hidden="true" />
-                <span>Mois</span>
               </button>
               <button
                 type="button"
@@ -654,16 +672,24 @@ export default function CalendarPage() {
                 aria-selected={viewMode === "list"}
                 data-active={viewMode === "list" || undefined}
                 onClick={() => setViewMode("list")}
+                aria-label="Vue agenda"
               >
                 <ListBulletIcon aria-hidden="true" />
-                <span>Agenda</span>
               </button>
+            </div>
+            <div className={styles.pillNav} role="navigation" aria-label="Navigation rapide">
+              <Link href="/calendar" aria-label="Calendrier" data-active>
+                <CalendarDaysIcon aria-hidden="true" />
+              </Link>
+              <Link href="/tasks" aria-label="Tâches">
+                <CheckCircleIcon aria-hidden="true" />
+              </Link>
             </div>
           </div>
         </header>
         {viewMode === "month" ? (
           <div className={styles.monthLayout}>
-            <div className={styles.gridWrapper}>
+            <div className={styles.gridWrapper} ref={gridRef}>
               <div className={styles.weekdayHeader}>
                 {["L", "M", "M", "J", "V", "S", "D"].map((label) => (
                   <span key={label}>{label}</span>
@@ -676,10 +702,11 @@ export default function CalendarPage() {
                       const items = filteredItemsByDay.get(cell.key) ?? [];
                       const preview = items.slice(0, MAX_DAY_PREVIEW);
                       const overflow = Math.max(items.length - preview.length, 0);
-                      const cellClasses = [
+                      const isSelected = cell.key === selectedKey;
+                      const classes = [
                         styles.dayButton,
                         cell.isCurrentMonth ? "" : styles.dayMuted,
-                        cell.key === selectedKey ? styles.daySelected : "",
+                        isSelected ? styles.daySelected : "",
                         cell.key === todayKey ? styles.dayToday : "",
                       ]
                         .filter(Boolean)
@@ -688,15 +715,20 @@ export default function CalendarPage() {
                         <button
                           type="button"
                           key={cell.key}
-                          className={cellClasses}
-                          onClick={() => setSelectedDate(cell.date)}
+                          className={classes}
+                          onClick={() => handleDaySelect(cell)}
+                          ref={(element) => {
+                            if (!element) {
+                              dayRefs.current.delete(cell.key);
+                              return;
+                            }
+                            dayRefs.current.set(cell.key, element);
+                          }}
                         >
                           <span className={styles.dayNumber}>{cell.date.getDate()}</span>
                           <div className={styles.eventList}>
                             {preview.map((item) => {
-                              const style = item.color
-                                ? { borderColor: item.color, backgroundColor: `${item.color}20` }
-                                : undefined;
+                              const style = item.color ? { backgroundColor: `${item.color}22` } : undefined;
                               return (
                                 <span key={item.id} className={styles.eventChip} style={style}>
                                   {item.timeLabel ? <small>{item.timeLabel}</small> : null}
@@ -712,6 +744,106 @@ export default function CalendarPage() {
                   </div>
                 ))}
               </div>
+              {composerTarget && composerPosition ? (
+                <form
+                  ref={composerFormRef}
+                  className={styles.inlineComposer}
+                  style={{
+                    top: composerPosition.top,
+                    left: composerPosition.left,
+                    minWidth: composerPosition.width,
+                  }}
+                  onSubmit={handleCreateEvent}
+                >
+                  <header className={styles.inlineComposerHeader}>
+                    <span>Nouvel évènement</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setComposerTarget(null);
+                        setFormMessage(null);
+                      }}
+                      aria-label="Fermer l'éditeur"
+                    >
+                      ×
+                    </button>
+                  </header>
+                  <label className={styles.inlineField}>
+                    <span>Titre</span>
+                    <input
+                      type="text"
+                      value={eventDraft.summary}
+                      onChange={(event) => setEventDraft((current) => ({ ...current, summary: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <div className={styles.inlineMeta}>
+                    <span>{formatListLabel(selectedDate)}</span>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={eventDraft.allDay}
+                        onChange={(event) => setEventDraft((current) => ({ ...current, allDay: event.target.checked }))}
+                      />
+                      <span>Toute la journée</span>
+                    </label>
+                  </div>
+                  {!eventDraft.allDay ? (
+                    <div className={styles.inlineTimes}>
+                      <label>
+                        <span>Début</span>
+                        <input
+                          type="time"
+                          value={eventDraft.startTime}
+                          onChange={(event) => setEventDraft((current) => ({ ...current, startTime: event.target.value }))}
+                          required
+                        />
+                      </label>
+                      <label>
+                        <span>Fin</span>
+                        <input
+                          type="time"
+                          value={eventDraft.endTime}
+                          onChange={(event) => setEventDraft((current) => ({ ...current, endTime: event.target.value }))}
+                          required
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                  <label className={styles.inlineField}>
+                    <span>Lieu</span>
+                    <input
+                      type="text"
+                      value={eventDraft.location}
+                      onChange={(event) => setEventDraft((current) => ({ ...current, location: event.target.value }))}
+                      placeholder="Lieu"
+                    />
+                  </label>
+                  <label className={styles.inlineField}>
+                    <span>Notes</span>
+                    <textarea
+                      value={eventDraft.description}
+                      onChange={(event) => setEventDraft((current) => ({ ...current, description: event.target.value }))}
+                      placeholder="Notes"
+                    />
+                  </label>
+                  {formMessage ? <p className={styles.inlineMessage}>{formMessage}</p> : null}
+                  <div className={styles.inlineActions}>
+                    <button type="submit" disabled={creatingEvent}>
+                      {creatingEvent ? "Ajout…" : "Enregistrer"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setComposerTarget(null);
+                        setFormMessage(null);
+                      }}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              ) : null}
             </div>
             <aside className={styles.dayPane}>
               <h3>{formatListLabel(selectedDate)}</h3>
