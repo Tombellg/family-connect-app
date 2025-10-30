@@ -119,6 +119,8 @@ export type FormattedCalendarEvent = {
   id: string;
   summary: string;
   location?: string;
+  description?: string;
+  isAllDay: boolean;
   start: {
     label: string;
     iso: string | null;
@@ -147,11 +149,14 @@ export async function fetchCalendarEvents(tokens: GoogleTokenBundle): Promise<Fo
     data.items?.map((event) => {
       const startDate = event.start?.dateTime ?? event.start?.date ?? null;
       const endDate = event.end?.dateTime ?? event.end?.date ?? null;
+      const isAllDay = Boolean(event.start?.date && !event.start?.dateTime);
 
       return {
         id: event.id ?? randomUUID(),
         summary: event.summary ?? "Sans titre",
         location: event.location ?? undefined,
+        description: event.description ?? undefined,
+        isAllDay,
         start: {
           label: formatDate(startDate),
           iso: startDate
