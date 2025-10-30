@@ -4,20 +4,18 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Family Connect",
-  description: "Synchronize your Google Calendar and Tasks in one place."
+  description: "Synchronisez votre famille avec Google Tasks et Google Agenda.",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <html lang="fr">
-      <body className="app-body">
-        <Providers>
-          <div className="app-shell">{children}</div>
-        </Providers>
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
