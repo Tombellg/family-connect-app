@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./overview.module.css";
 
@@ -17,6 +17,8 @@ const ArrowIcon = () => (
     <path d="M7 17l7-7-7-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
   </svg>
 );
+
+type PreviewMode = "tasks" | "calendar";
 
 const TaskGlyph = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -149,10 +151,30 @@ export default function OverviewPage() {
       <section className={styles.deckWrapper}>
         <header className={styles.deckHeader}>
           <span>Tableau de bord familial</span>
-          <span>{syncStatusLabel}</span>
+          <div className={styles.headerControls}>
+            <div className={styles.modeSwitch} role="group" aria-label="Changer la prévisualisation">
+              <button
+                type="button"
+                data-active={mode === "tasks"}
+                aria-pressed={mode === "tasks"}
+                onClick={() => setMode("tasks")}
+              >
+                Tâches
+              </button>
+              <button
+                type="button"
+                data-active={mode === "calendar"}
+                aria-pressed={mode === "calendar"}
+                onClick={() => setMode("calendar")}
+              >
+                Calendrier
+              </button>
+            </div>
+            <span>{syncStatusLabel}</span>
+          </div>
         </header>
         <div className={styles.deckScroller}>
-          <article className={styles.deckCard}>
+          <article className={styles.deckCard} data-active={mode === "tasks"}>
             <div className={styles.cardTop}>
               <TaskGlyph />
               <span>Actions immédiates</span>
@@ -174,7 +196,7 @@ export default function OverviewPage() {
               <ArrowIcon />
             </Link>
           </article>
-          <article className={styles.deckCard}>
+          <article className={styles.deckCard} data-active={mode === "calendar"}>
             <div className={styles.cardTop}>
               <CalendarGlyph />
               <span>Agenda partagé</span>
@@ -195,7 +217,7 @@ export default function OverviewPage() {
               <ArrowIcon />
             </Link>
           </article>
-          <article className={styles.deckCard}>
+          <article className={styles.deckCard} data-active="true">
             <div className={styles.cardTop}>
               <span className={styles.pill}>Synthèse</span>
               <span>Équilibre du foyer</span>

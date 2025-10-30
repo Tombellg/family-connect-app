@@ -19,6 +19,53 @@
   color: var(--text-subtle);
 }
 
+.headerControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modeSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.modeSwitch button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--text-subtle);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.modeSwitch button[data-active="true"] {
+  color: var(--text-primary);
+  background: rgba(56, 189, 248, 0.24);
+  box-shadow: 0 12px 24px rgba(8, 47, 73, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.modeSwitch button:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 2px;
+}
+
+.modeSwitch button:hover {
+  transform: translateY(-1px);
+}
+
 .deckScroller {
   display: grid;
   grid-auto-flow: column;
@@ -46,11 +93,18 @@
   backdrop-filter: blur(20px);
   box-shadow: 0 20px 38px rgba(8, 47, 73, 0.22);
   min-height: 260px;
+  transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
 }
 
 .deckCard svg {
   width: 22px;
   height: 22px;
+}
+
+.deckCard[data-active="false"] {
+  opacity: 0.45;
+  transform: translateY(10px) scale(0.97);
+  box-shadow: 0 10px 22px rgba(8, 47, 73, 0.18);
 }
 
 .cardTop {
