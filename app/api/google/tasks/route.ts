@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
+import type { tasks_v1 } from "googleapis";
 import { authOptions } from "@/lib/auth";
 import {
   formatGoogleTask,
@@ -176,16 +177,27 @@ export async function POST(request: Request) {
 
   try {
     const task = await runTaskMutation(tokens, async (client) => {
-      const { data } = await client.tasks.insert({
+      const requestBody = {
+        title: payload.title,
+        notes: payload.notes ?? undefined,
+        due: payload.due ?? undefined,
+        recurrence: payload.recurrence ?? undefined,
+        status: payload.status
+      } as tasks_v1.Schema$Task & { recurrence?: string[] };
+
+      const rawResponse = await client.tasks.insert({
         tasklist: payload.listId,
-        requestBody: {
-          title: payload.title,
-          notes: payload.notes ?? undefined,
-          due: payload.due ?? undefined,
-          recurrence: payload.recurrence ?? undefined,
-          status: payload.status
-        }
+        requestBody
       });
+
+      const data =
+        rawResponse && typeof rawResponse === "object" && "data" in rawResponse
+          ? (rawResponse as { data?: tasks_v1.Schema$Task }).data
+          : undefined;
+
+      if (!data) {
+        throw new Error("Réponse inattendue de l'API Google Tasks lors de la création");
+      }
 
       return formatGoogleTask(data);
     });
@@ -225,17 +237,28 @@ export async function PATCH(request: Request) {
 
   try {
     const task = await runTaskMutation(tokens, async (client) => {
-      const { data } = await client.tasks.patch({
+      const requestBody = {
+        title: payload.title ?? undefined,
+        notes: payload.notes ?? undefined,
+        due: payload.due ?? undefined,
+        recurrence: payload.recurrence ?? undefined,
+        status: payload.status ?? undefined
+      } as tasks_v1.Schema$Task & { recurrence?: string[] };
+
+      const rawResponse = await client.tasks.patch({
         tasklist: payload.listId,
         task: payload.taskId,
-        requestBody: {
-          title: payload.title ?? undefined,
-          notes: payload.notes ?? undefined,
-          due: payload.due ?? undefined,
-          recurrence: payload.recurrence ?? undefined,
-          status: payload.status ?? undefined
-        }
+        requestBody
       });
+
+      const data =
+        rawResponse && typeof rawResponse === "object" && "data" in rawResponse
+          ? (rawResponse as { data?: tasks_v1.Schema$Task }).data
+          : undefined;
+
+      if (!data) {
+        throw new Error("Réponse inattendue de l'API Google Tasks lors de la mise à jour");
+      }
 
       return formatGoogleTask(data);
     });

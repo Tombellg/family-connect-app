@@ -201,6 +201,8 @@ function parseDueDate(input?: string | null) {
 }
 
 export function formatGoogleTask(task: tasks_v1.Schema$Task): FormattedTask {
+  const extendedTask = task as tasks_v1.Schema$Task & { recurrence?: string[] };
+
   return {
     id: task.id ?? randomUUID(),
     title: task.title ?? "Sans titre",
@@ -208,7 +210,7 @@ export function formatGoogleTask(task: tasks_v1.Schema$Task): FormattedTask {
     due: parseDueDate(task.due ?? undefined),
     notes: task.notes ?? undefined,
     updated: task.updated ?? undefined,
-    recurrence: task.recurrence ?? undefined,
+    recurrence: extendedTask.recurrence ?? undefined,
     webLink: task.links?.find((link) => link.type === "email")?.link
   } satisfies FormattedTask;
 }
@@ -229,6 +231,7 @@ export async function fetchGoogleTasks(tokens: GoogleTokenBundle): Promise<Forma
 
   const detailedLists = await Promise.all(
     lists.map(async (list) => {
+      const enhancedList = list as tasks_v1.Schema$TaskList & { color?: string; colorId?: string };
       try {
         const { data: taskData } = await tasks.tasks.list({
           tasklist: list.id ?? "@default",
@@ -244,7 +247,7 @@ export async function fetchGoogleTasks(tokens: GoogleTokenBundle): Promise<Forma
           id: list.id ?? randomUUID(),
           title: list.title ?? "Sans titre",
           updated: list.updated ?? undefined,
-          color: resolveTaskListColor(list.color ?? undefined, list.colorId ?? undefined),
+          color: resolveTaskListColor(enhancedList.color ?? undefined, enhancedList.colorId ?? undefined),
           kind: list.kind ?? undefined,
           tasks: formattedTasks
         } satisfies FormattedTaskList;
@@ -257,7 +260,7 @@ export async function fetchGoogleTasks(tokens: GoogleTokenBundle): Promise<Forma
           id: list.id ?? randomUUID(),
           title: list.title ?? "Sans titre",
           updated: list.updated ?? undefined,
-          color: resolveTaskListColor(list.color ?? undefined, list.colorId ?? undefined),
+          color: resolveTaskListColor(enhancedList.color ?? undefined, enhancedList.colorId ?? undefined),
           kind: list.kind ?? undefined,
           tasks: []
         } satisfies FormattedTaskList;

@@ -216,6 +216,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [draft, setDraft] = useState<TaskDraft>({
     title: "",
     listId: null,
@@ -228,6 +229,10 @@ export default function HomePage() {
 
   const isAuthenticated = status === "authenticated";
   const isLoadingSession = status === "loading";
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || !session?.user?.email) {
@@ -295,6 +300,8 @@ export default function HomePage() {
   );
 
   const accentTheme = ACCENTS[settings.accent] ?? ACCENTS.lagoon;
+
+  const cascade = useCallback((step: number): CSSProperties => ({ "--stagger": step } as CSSProperties), []);
 
   const themeStyle = useMemo(() => {
     const density = settings.density;
@@ -485,9 +492,9 @@ export default function HomePage() {
   }, [isAuthenticated, lastSync, loading]);
 
   return (
-    <main className={styles.page} style={themeStyle}>
+    <main className={styles.page} style={themeStyle} data-ready={isHydrated ? "true" : "false"}>
       <div className={styles.headerRow}>
-        <div className={styles.hero}>
+        <div className={styles.hero} style={cascade(0)}>
           <div className={styles.heroTitles}>
             <span className={styles.subtitle}>Family Connect OS</span>
             <h1>Un tableau de bord digne de macOS Sonoma et iOS 17.</h1>
@@ -533,7 +540,7 @@ export default function HomePage() {
             )}
           </div>
         </div>
-        <aside className={styles.heroCard}>
+        <aside className={styles.heroCard} style={cascade(1)}>
           <div>
             <p className={styles.cardEyebrow}>État du cockpit</p>
             <h2>{dynamicHeader}</h2>
@@ -559,7 +566,7 @@ export default function HomePage() {
 
       {error ? <p className={styles.errorBanner}>{error}</p> : null}
 
-      <section className={styles.preferences}>
+      <section className={styles.preferences} style={cascade(2)}>
         <h2>Personnalisation instantanée</h2>
         <div className={styles.preferencesGrid}>
           <div className={styles.preferenceBlock}>
@@ -613,7 +620,7 @@ export default function HomePage() {
       </section>
 
       <div className={styles.desktopGrid}>
-        <section className={`${styles.tile} ${styles.tasksTile}`}>
+        <section className={`${styles.tile} ${styles.tasksTile}`} style={cascade(3)}>
           <header className={styles.tileHeader}>
             <div>
               <h2>Tâches Google regroupées par listes</h2>
@@ -892,7 +899,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className={`${styles.tile} ${styles.calendarTile}`}>
+        <section className={`${styles.tile} ${styles.calendarTile}`} style={cascade(4)}>
           <header className={styles.tileHeader}>
             <div>
               <h2>Calendrier panoramique</h2>
@@ -919,7 +926,7 @@ export default function HomePage() {
           {!upcomingEvents.length ? <p className={styles.emptyState}>Aucun événement à venir.</p> : null}
         </section>
 
-        <section className={`${styles.tile} ${styles.familyTile}`}>
+        <section className={`${styles.tile} ${styles.familyTile}`} style={cascade(5)}>
           <header className={styles.tileHeader}>
             <div>
               <h2>Gestion de la famille</h2>
