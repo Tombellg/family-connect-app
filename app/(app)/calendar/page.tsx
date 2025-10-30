@@ -76,9 +76,15 @@ export default function CalendarPage() {
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
-  const sources = useMemo(() => {
-    const base = [{ id: "calendar", label: "Agenda Google" }];
-    const tasks = taskLists.map((list) => ({ id: `task:${list.id}`, label: list.title, color: list.color }));
+  type SourceOption = { id: string; label: string; color?: string };
+
+  const sources = useMemo<SourceOption[]>(() => {
+    const base: SourceOption[] = [{ id: "calendar", label: "Agenda Google" }];
+    const tasks = taskLists.map<SourceOption>((list) => ({
+      id: `task:${list.id}`,
+      label: list.title,
+      color: list.color,
+    }));
     return [...base, ...tasks];
   }, [taskLists]);
 
