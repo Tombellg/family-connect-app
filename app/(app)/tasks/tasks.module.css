@@ -426,6 +426,15 @@
   cursor: pointer;
   font-size: 0.78rem;
   color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.completedBlock ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
 }
 
 .completedBlock ul {

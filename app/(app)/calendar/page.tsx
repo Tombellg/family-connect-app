@@ -375,6 +375,18 @@ export default function CalendarPage() {
         map.set(key, matches);
       }
     });
+
+    map.forEach((items, key) => {
+      items.sort((a, b) => {
+        if (a.rawDate && b.rawDate) {
+          return a.rawDate.getTime() - b.rawDate.getTime();
+        }
+        if (a.rawDate) return -1;
+        if (b.rawDate) return 1;
+        return a.title.localeCompare(b.title);
+      });
+    });
+
     return map;
   }, [itemsByDay, searchTerm]);
 

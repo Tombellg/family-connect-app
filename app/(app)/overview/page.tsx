@@ -73,6 +73,7 @@ function formatEventTime(dateIso?: string | null, isAllDay?: boolean) {
 
 export default function OverviewPage() {
   const { taskLists, events, syncing, lastSync } = useDashboard();
+  const [mode, setMode] = useState<PreviewMode>("tasks");
 
   const { totalTasks, completedTasks, overdueTasks } = useMemo(() => {
     const flattened = taskLists.flatMap((list) => list.tasks);
@@ -142,6 +143,13 @@ export default function OverviewPage() {
       },
     ];
   }, [completedTasks, overdueTasks.length, totalTasks, upcomingEvents.length]);
+
+  const lastSyncLabel = useMemo(() => {
+    if (!lastSync) {
+      return "Jamais synchronisé";
+    }
+    return `Synchronisé le ${lastSync.toLocaleDateString("fr-FR", { dateStyle: "medium" })}`;
+  }, [lastSync]);
 
   return (
     <div className={styles.page}>

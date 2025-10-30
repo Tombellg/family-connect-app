@@ -226,6 +226,12 @@ export default function TasksPage() {
     await toggleTaskStatus(selectedList.id, taskId, status);
   };
 
+  const setDueFromToday = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    setDraft((current) => ({ ...current, due: date }));
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
