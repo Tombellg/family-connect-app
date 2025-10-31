@@ -20,9 +20,9 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: var(--surface-strong);
-  border-right: 1px solid var(--surface-border);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  background: transparent;
+  border-right: none;
+  box-shadow: none;
   transform: translateX(-110%);
   transition: transform 0.28s ease;
   overflow-y: auto;
@@ -75,36 +75,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  background: color-mix(in srgb, var(--fc-surface) 90%, transparent);
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .listButton small,
 .listButtonActive small {
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: rgba(56, 189, 248, 0.18);
   color: var(--text-primary);
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
 }
 
 .listButton:hover {
-  border-color: rgba(56, 189, 248, 0.45);
   color: var(--text-primary);
   transform: translateY(-1px);
 }
 
 .listButtonActive {
-  border-color: rgba(56, 189, 248, 0.6);
-  background: rgba(56, 189, 248, 0.2);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .panelEmpty {
@@ -115,25 +112,24 @@
 .workspace {
   flex: 1;
   display: flex;
-  justify-content: center;
-  padding: 12px clamp(12px, 5vw, 28px) 32px;
+  justify-content: flex-start;
+  padding: 18px clamp(18px, 6vw, 38px);
   overflow: auto;
 }
 
 .listCard {
   width: min(720px, 100%);
-  background: var(--fc-surface);
-  border: 1px solid var(--surface-border);
-  border-radius: 22px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .listHeader {
-  padding: 18px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid var(--surface-border);
+  padding: 12px 0 18px;
 }
 
 .listTitle {
@@ -161,11 +157,10 @@
 }
 
 .addRow {
-  padding: 18px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  padding: 14px 0 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .addTrigger {
@@ -173,14 +168,14 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  border-radius: 16px;
-  border: 1px dashed rgba(56, 189, 248, 0.45);
-  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
+  border-radius: 12px;
+  border: 1px dashed rgba(56, 189, 248, 0.3);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 14px;
+  font-size: 0.86rem;
+  padding: 12px;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .addTrigger svg {
@@ -190,8 +185,7 @@
 }
 
 .addTrigger:hover {
-  border-color: rgba(56, 189, 248, 0.7);
-  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.6);
   color: var(--text-primary);
   transform: translateY(-1px);
 }
@@ -217,8 +211,8 @@
 
 .addInput {
   border: none;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--fc-surface) 90%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
   color: inherit;
   font-size: 0.95rem;
   padding: 10px 12px;
@@ -230,34 +224,31 @@
 
 .toggleButton,
 .toggleButtonActive {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
-  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .toggleButton svg,
 .toggleButtonActive svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .toggleButton:hover {
-  border-color: rgba(56, 189, 248, 0.45);
-  color: var(--text-primary);
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
 .toggleButtonActive {
-  border-color: rgba(56, 189, 248, 0.65);
-  background: rgba(56, 189, 248, 0.24);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .addSubmit,
@@ -283,20 +274,19 @@
 }
 
 .addCancel {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
-  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .addCancel:hover {
-  border-color: rgba(248, 113, 113, 0.45);
   color: #fecaca;
   transform: translateY(-1px);
 }
@@ -310,9 +300,9 @@
 }
 
 .notesField textarea {
-  border: none;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  background: transparent;
   padding: 10px 12px;
   color: inherit;
   min-height: 72px;
@@ -329,15 +319,15 @@
 
 .quickActions button {
   border: none;
-  border-radius: 12px;
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
-  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--text-subtle);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .quickActions button svg {
@@ -347,8 +337,8 @@
 
 .quickActions button:hover,
 .quickActionActive {
-  background: rgba(56, 189, 248, 0.22);
-  color: var(--text-primary);
+  color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .dueLabel {
@@ -360,36 +350,31 @@
 .calendarPanel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
-  border: 1px solid rgba(0, 0, 0, 0.45);
+  gap: 10px;
+  padding: 8px 0;
 }
 
 .clearDate {
   align-self: flex-end;
   border: none;
-  border-radius: 12px;
-  padding: 6px 10px;
-  background: rgba(248, 113, 113, 0.18);
+  border-radius: 10px;
+  padding: 4px 8px;
+  background: transparent;
   color: #fecaca;
   cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .clearDate:hover {
-  background: rgba(248, 113, 113, 0.3);
+  transform: translateY(-1px);
   color: #fee2e2;
 }
 
 .recurrencePanel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 12px;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
-  border: 1px solid rgba(0, 0, 0, 0.45);
+  gap: 12px;
+  padding: 10px 0;
 }
 
 .recurrenceRow {
@@ -427,22 +412,21 @@
 .weekdayButton,
 .weekdayActive {
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 6px 10px;
-  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
-  color: var(--text-muted);
+  background: transparent;
+  color: var(--text-subtle);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .weekdayButton:hover {
-  background: rgba(56, 189, 248, 0.22);
-  color: var(--text-primary);
+  color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .weekdayActive {
-  background: rgba(56, 189, 248, 0.3);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .monthDayField {
@@ -454,9 +438,9 @@
 }
 
 .monthDayField input {
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
   color: inherit;
   padding: 8px 10px;
 }
@@ -478,43 +462,78 @@
 }
 
 .taskRow {
-  padding: 16px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  padding: 12px 0 10px;
 }
 
 .taskLabel {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   align-items: flex-start;
   color: var(--text-muted);
 }
 
 .taskLabel input {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-top: 6px;
   accent-color: var(--accent);
 }
 
 .taskLabel strong {
   display: block;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   color: var(--text-primary);
 }
 
 .taskLabel p {
-  margin: 6px 0;
-  font-size: 0.82rem;
+  margin: 4px 0;
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
 .taskMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.75rem;
+  gap: 8px;
+  font-size: 0.72rem;
   color: var(--text-subtle);
+}
+
+.dueChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.recurrenceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.7rem;
+  text-transform: none;
+}
+
+.recurrenceBadge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.recurrenceBadgePast {
+  color: #fca5a5;
+}
+
+.recurrenceBadgeToday {
+  color: #fde68a;
+}
+
+.recurrenceBadgeFuture {
+  color: #86efac;
 }
 
 .emptyRow {
@@ -528,11 +547,9 @@
   padding: 0;
 }
 
+
 .sectionDivider details {
-  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
-  border-top: 1px solid rgba(0, 0, 0, 0.45);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
-  padding: 12px clamp(16px, 4vw, 24px);
+  padding: 12px 0;
 }
 
 .sectionDivider summary {
@@ -552,17 +569,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.sectionDivider li {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.35);
-  padding-bottom: 12px;
-}
-
-.sectionDivider li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  gap: 10px;
 }
 
 @media (max-width: 1080px) {

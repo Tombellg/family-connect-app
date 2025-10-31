@@ -65,7 +65,7 @@ export default function TasksPage() {
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(true);
 
   const groupedLists = useMemo(() => {
     if (!taskLists.length) {
@@ -145,11 +145,14 @@ export default function TasksPage() {
   useEffect(() => {
     const openDrawer = () => setMenuOpen(true);
     const closeDrawer = () => setMenuOpen(false);
+    const toggleDrawer = () => setMenuOpen((value) => !value);
     window.addEventListener("fc:open-drawer", openDrawer);
     window.addEventListener("fc:close-drawer", closeDrawer);
+    window.addEventListener("fc:toggle-drawer", toggleDrawer);
     return () => {
       window.removeEventListener("fc:open-drawer", openDrawer);
       window.removeEventListener("fc:close-drawer", closeDrawer);
+      window.removeEventListener("fc:toggle-drawer", toggleDrawer);
     };
   }, []);
 
@@ -276,6 +279,34 @@ export default function TasksPage() {
     const date = new Date();
     date.setDate(date.getDate() + days);
     setDraft((current) => ({ ...current, due: date }));
+  };
+
+  const describeRecurrenceStatus = (task: FormattedTaskList["tasks"][number]) => {
+    if (!task.recurrence?.length) {
+      return null;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = task.due?.iso ? new Date(task.due.iso) : null;
+    if (dueDate) {
+      dueDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((today.getTime() - dueDate.getTime()) / 86400000);
+      if (diffDays === 0) {
+        return { label: "Aujourd'hui", tone: "today" as const };
+      }
+      if (diffDays > 0) {
+        return {
+          label: `Il y a ${diffDays} jour${diffDays > 1 ? "s" : ""}`,
+          tone: "past" as const,
+        };
+      }
+      const future = Math.abs(diffDays);
+      return {
+        label: `Dans ${future} jour${future > 1 ? "s" : ""}`,
+        tone: "future" as const,
+      };
+    }
+    return { label: "Récurrente", tone: "future" as const };
   };
 
   const handleCheck = async (taskId: string, status: CheckboxStatus) => {
@@ -584,34 +615,50 @@ export default function TasksPage() {
                 <span className={styles.emptyRow}>Aucune liste disponible. Synchronisez vos comptes.</span>
               )}
             </li>
-            {pendingTasks.map((task) => (
-              <li key={task.id} className={styles.taskRow}>
-                <label className={styles.taskLabel}>
-                  <input
-                    type="checkbox"
-                    checked={task.status === "completed"}
-                    onChange={() => handleCheck(task.id, task.status === "completed" ? "needsAction" : "completed")}
-                    aria-label={
-                      task.status === "completed"
-                        ? `Rouvrir ${task.title}`
-                        : `Marquer ${task.title} comme terminée`
-                    }
-                  />
-                  <span>
-                    <strong>{task.title}</strong>
-                    {task.notes ? <p>{task.notes}</p> : null}
-                    <div className={styles.taskMeta}>
-                      {task.due?.iso ? (
-                        <span>
-                          Échéance {new Date(task.due.iso).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
-                        </span>
-                      ) : null}
-                      {task.recurrence?.length ? <span>Tâche récurrente</span> : null}
-                    </div>
-                  </span>
-                </label>
-              </li>
-            ))}
+            {pendingTasks.map((task) => {
+              const recurrenceStatus = describeRecurrenceStatus(task);
+              return (
+                <li key={task.id} className={styles.taskRow}>
+                  <label className={styles.taskLabel}>
+                    <input
+                      type="checkbox"
+                      checked={task.status === "completed"}
+                      onChange={() => handleCheck(task.id, task.status === "completed" ? "needsAction" : "completed")}
+                      aria-label={
+                        task.status === "completed"
+                          ? `Rouvrir ${task.title}`
+                          : `Marquer ${task.title} comme terminée`
+                      }
+                    />
+                    <span>
+                      <strong>{task.title}</strong>
+                      {task.notes ? <p>{task.notes}</p> : null}
+                      <div className={styles.taskMeta}>
+                        {task.due?.iso ? (
+                          <span className={styles.dueChip}>
+                            {new Date(task.due.iso).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
+                          </span>
+                        ) : null}
+                        {recurrenceStatus ? (
+                          <span
+                            className={`${styles.recurrenceBadge} ${
+                              recurrenceStatus.tone === "past"
+                                ? styles.recurrenceBadgePast
+                                : recurrenceStatus.tone === "today"
+                                ? styles.recurrenceBadgeToday
+                                : styles.recurrenceBadgeFuture
+                            }`}
+                          >
+                            <CalendarDaysIcon aria-hidden="true" />
+                            <span>{recurrenceStatus.label}</span>
+                          </span>
+                        ) : null}
+                      </div>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
             {pendingTasks.length === 0 && selectedList ? (
               <li className={styles.emptyRow}>Respirez, tout est à jour dans cette liste.</li>
             ) : null}
@@ -620,28 +667,45 @@ export default function TasksPage() {
                 <details open>
                   <summary>{completedTasks.length} tâche(s) terminée(s)</summary>
                   <ul>
-                    {completedTasks.map((task) => (
-                      <li key={task.id}>
-                        <label className={styles.taskLabel}>
-                          <input
-                            type="checkbox"
-                            checked
-                            onChange={() => handleCheck(task.id, "needsAction")}
-                            aria-label={`Rouvrir ${task.title}`}
-                          />
-                          <span>
-                            <strong>{task.title}</strong>
-                            <div className={styles.taskMeta}>
-                              {task.due?.iso ? (
-                                <span>
-                                  Échéance {new Date(task.due.iso).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
-                                </span>
-                              ) : null}
-                            </div>
-                          </span>
-                        </label>
-                      </li>
-                    ))}
+                    {completedTasks.map((task) => {
+                      const recurrenceStatus = describeRecurrenceStatus(task);
+                      return (
+                        <li key={task.id}>
+                          <label className={styles.taskLabel}>
+                            <input
+                              type="checkbox"
+                              checked
+                              onChange={() => handleCheck(task.id, "needsAction")}
+                              aria-label={`Rouvrir ${task.title}`}
+                            />
+                            <span>
+                              <strong>{task.title}</strong>
+                              <div className={styles.taskMeta}>
+                                {task.due?.iso ? (
+                                  <span className={styles.dueChip}>
+                                    {new Date(task.due.iso).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
+                                  </span>
+                                ) : null}
+                                {recurrenceStatus ? (
+                                  <span
+                                    className={`${styles.recurrenceBadge} ${
+                                      recurrenceStatus.tone === "past"
+                                        ? styles.recurrenceBadgePast
+                                        : recurrenceStatus.tone === "today"
+                                        ? styles.recurrenceBadgeToday
+                                        : styles.recurrenceBadgeFuture
+                                    }`}
+                                  >
+                                    <CalendarDaysIcon aria-hidden="true" />
+                                    <span>{recurrenceStatus.label}</span>
+                                  </span>
+                                ) : null}
+                              </div>
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </details>
               </li>
