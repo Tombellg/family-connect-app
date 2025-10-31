@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   Bars3Icon,
@@ -417,6 +417,31 @@ function ShellContent({ children }: { children: ReactNode }) {
     setDesktopCreateOpen(false);
     setMobileCreateOpen(false);
   };
+
+  const changeCalendarMonth = useCallback(
+    (direction: "previous" | "next") => {
+      if (typeof window === "undefined") {
+        return;
+      }
+      const eventName = direction === "previous" ? "fc:calendar-prev-month" : "fc:calendar-next-month";
+      window.dispatchEvent(new CustomEvent(eventName));
+    },
+    []
+  );
+
+  const setCalendarView = useCallback(
+    (view: CalendarViewMode) => {
+      if (typeof window === "undefined") {
+        return;
+      }
+      window.dispatchEvent(
+        new CustomEvent("fc:calendar-set-view", {
+          detail: { view },
+        })
+      );
+    },
+    []
+  );
 
   const avatar = session?.user?.image;
   const initials = session?.user?.name?.slice(0, 2).toUpperCase();
