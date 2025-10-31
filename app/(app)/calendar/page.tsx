@@ -1,17 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent as ReactTouchEvent } from "react";
-import {
-  Bars3Icon,
-  CalendarDaysIcon,
-  CheckCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ListBulletIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import type { FormattedTaskList } from "@/lib/google";
 import styles from "./calendar.module.css";
@@ -254,7 +246,7 @@ export default function CalendarPage() {
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(true);
   const [composerTarget, setComposerTarget] = useState<string | null>(null);
   const [composerPosition, setComposerPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -388,11 +380,44 @@ export default function CalendarPage() {
   }, [enabledSources, events, paletteBySource, taskLists]);
 
   const listItems = useMemo(() => {
-    const days = Array.from(itemsByDay.keys()).sort();
-    return days.map((key) => ({
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    type UpcomingEntry = { key: string; item: CalendarItem; sortDate: Date };
+    const upcoming: UpcomingEntry[] = [];
+
+    itemsByDay.forEach((items, key) => {
+      items
+        .filter((item) => item.type === "event")
+        .forEach((item) => {
+          const base = item.rawDate ? new Date(item.rawDate) : parseDateKey(key);
+          if (base < startOfToday) {
+            return;
+          }
+          upcoming.push({ key, item, sortDate: base });
+        });
+    });
+
+    upcoming.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
+
+    const grouped = new Map<
+      string,
+      { label: string; items: CalendarItem[] }
+    >();
+    const order: string[] = [];
+
+    upcoming.forEach(({ key, item }) => {
+      if (!grouped.has(key)) {
+        grouped.set(key, { label: formatListLabel(parseDateKey(key)), items: [] });
+        order.push(key);
+      }
+      grouped.get(key)!.items.push(item);
+    });
+
+    return order.map((key) => ({
       key,
-      label: formatListLabel(new Date(key)),
-      items: itemsByDay.get(key) ?? [],
+      label: grouped.get(key)!.label,
+      items: grouped.get(key)!.items,
     }));
   }, [itemsByDay]);
 
@@ -406,6 +431,14 @@ export default function CalendarPage() {
   const dayOverflow = Math.max(dayItems.length - dayPreview.length, 0);
   const agendaSections = listItems.slice(0, MAX_AGENDA_SECTIONS);
   const composerDate = useMemo(() => selectedDate ?? parseDateKey(eventDraft.date), [eventDraft.date, selectedDate]);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("fc:calendar-topbar", {
+        detail: { monthLabel, viewMode },
+      })
+    );
+  }, [monthLabel, viewMode]);
 
   const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -443,11 +476,32 @@ export default function CalendarPage() {
     }
   };
 
-  const changeMonth = (offset: number) => {
+  const changeMonth = useCallback((offset: number) => {
     setCurrentMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
     setComposerTarget(null);
     setFormMessage(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    const handlePrevious = () => changeMonth(-1);
+    const handleNext = () => changeMonth(1);
+    const handleSetView = (event: Event) => {
+      const detail = (event as CustomEvent<{ view?: ViewMode }>).detail;
+      if (!detail?.view) {
+        return;
+      }
+      setViewMode(detail.view);
+    };
+
+    window.addEventListener("fc:calendar-prev-month", handlePrevious);
+    window.addEventListener("fc:calendar-next-month", handleNext);
+    window.addEventListener("fc:calendar-set-view", handleSetView);
+    return () => {
+      window.removeEventListener("fc:calendar-prev-month", handlePrevious);
+      window.removeEventListener("fc:calendar-next-month", handleNext);
+      window.removeEventListener("fc:calendar-set-view", handleSetView);
+    };
+  }, [changeMonth, setViewMode]);
 
   const handleDaySelect = (cell: MonthCell) => {
     const key = formatDateKey(cell.date);
@@ -521,11 +575,14 @@ export default function CalendarPage() {
   useEffect(() => {
     const openDrawer = () => setMenuOpen(true);
     const closeDrawer = () => setMenuOpen(false);
+    const toggleDrawer = () => setMenuOpen((value) => !value);
     window.addEventListener("fc:open-drawer", openDrawer);
     window.addEventListener("fc:close-drawer", closeDrawer);
+    window.addEventListener("fc:toggle-drawer", toggleDrawer);
     return () => {
       window.removeEventListener("fc:open-drawer", openDrawer);
       window.removeEventListener("fc:close-drawer", closeDrawer);
+      window.removeEventListener("fc:toggle-drawer", toggleDrawer);
     };
   }, []);
 
@@ -756,60 +813,6 @@ export default function CalendarPage() {
         </div>
       </aside>
       <section className={styles.workspace}>
-        <header className={styles.toolbar}>
-          <div className={styles.toolbarLeft}>
-            <button
-              type="button"
-              className={styles.menuToggle}
-              onClick={() => setMenuOpen((value) => !value)}
-              aria-expanded={menuOpen}
-              aria-controls="calendar-panel"
-            >
-              <Bars3Icon aria-hidden="true" />
-            </button>
-            <span className={styles.monthTitle}>{monthLabel}</span>
-            <div className={styles.monthControls}>
-              <button type="button" onClick={() => changeMonth(-1)} aria-label="Mois précédent">
-                <ChevronLeftIcon aria-hidden="true" />
-              </button>
-              <button type="button" onClick={() => changeMonth(1)} aria-label="Mois suivant">
-                <ChevronRightIcon aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-          <div className={styles.toolbarRight}>
-            <div className={styles.viewSwitch} role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === "month"}
-                data-active={viewMode === "month" || undefined}
-                onClick={() => setViewMode("month")}
-                aria-label="Vue calendrier"
-              >
-                <Squares2X2Icon aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === "list"}
-                data-active={viewMode === "list" || undefined}
-                onClick={() => setViewMode("list")}
-                aria-label="Vue agenda"
-              >
-                <ListBulletIcon aria-hidden="true" />
-              </button>
-            </div>
-            <div className={styles.pillNav} role="navigation" aria-label="Navigation rapide">
-              <Link href="/calendar" aria-label="Calendrier" data-active>
-                <CalendarDaysIcon aria-hidden="true" />
-              </Link>
-              <Link href="/tasks" aria-label="Tâches">
-                <CheckCircleIcon aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        </header>
         {viewMode === "month" ? (
           <div className={styles.monthLayout}>
             <div

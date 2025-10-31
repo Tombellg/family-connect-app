@@ -10,11 +10,15 @@ import {
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon,
   CheckCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   Cog6ToothIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   UserCircleIcon,
   BellIcon,
+  ListBulletIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
@@ -29,6 +33,13 @@ const NAVIGATION: { href: string; label: string; Icon: IconComponent }[] = [
 ];
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+type CalendarViewMode = "month" | "list";
+
+type CalendarTopbarState = {
+  monthLabel: string;
+  viewMode: CalendarViewMode;
+};
 
 type SyncBadgeProps = {
   syncing: boolean;
@@ -175,8 +186,13 @@ function ShellContent({ children }: { children: ReactNode }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsButtonRef = useRef<HTMLButtonElement | null>(null);
   const notificationsPopoverRef = useRef<HTMLDivElement | null>(null);
+  const [calendarTopbar, setCalendarTopbar] = useState<CalendarTopbarState>(() => ({
+    monthLabel: new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+    viewMode: "month",
+  }));
 
   const active = useMemo(() => pathname?.replace(/\/$/, "") || "/calendar", [pathname]);
+  const onCalendarPage = active.startsWith("/calendar");
 
   useEffect(() => {
     setProfileOpen(false);
@@ -184,6 +200,28 @@ function ShellContent({ children }: { children: ReactNode }) {
     setMobileCreateOpen(false);
     setNotificationsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handleCalendarTopbar = (event: Event) => {
+      const detail = (event as CustomEvent<CalendarTopbarState>).detail;
+      if (!detail) {
+        return;
+      }
+      setCalendarTopbar(detail);
+    };
+    window.addEventListener("fc:calendar-topbar", handleCalendarTopbar);
+    return () => window.removeEventListener("fc:calendar-topbar", handleCalendarTopbar);
+  }, []);
+
+  useEffect(() => {
+    if (!onCalendarPage) {
+      setCalendarTopbar((current) => ({
+        ...current,
+        monthLabel: new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
+        viewMode: "month",
+      }));
+    }
+  }, [onCalendarPage]);
 
   useEffect(() => {
     if (!profileOpen) {
@@ -392,7 +430,7 @@ function ShellContent({ children }: { children: ReactNode }) {
           <button
             type="button"
             className={styles.menuButton}
-            onClick={() => window.dispatchEvent(new CustomEvent("fc:open-drawer"))}
+            onClick={() => window.dispatchEvent(new CustomEvent("fc:toggle-drawer"))}
             aria-label="Ouvrir le menu latéral"
           >
             <Bars3Icon aria-hidden="true" />
@@ -419,14 +457,16 @@ function ShellContent({ children }: { children: ReactNode }) {
               Nouvelle tâche
             </button>
           </div>
-          <button
-            type="button"
-            className={styles.todayButton}
-            onClick={() => window.dispatchEvent(new CustomEvent("fc:focus-today"))}
-            aria-label="Mettre en avant la date du jour"
-          >
-            <span className={styles.todayBadge}>{todayLabel}</span>
-          </button>
+          {onCalendarPage ? (
+            <button
+              type="button"
+              className={styles.todayButton}
+              onClick={() => window.dispatchEvent(new CustomEvent("fc:focus-today"))}
+              aria-label="Mettre en avant la date du jour"
+            >
+              <span className={styles.todayBadge}>{todayLabel}</span>
+            </button>
+          ) : null}
           <Link href="/calendar" className={styles.topbarBrand}>
             <span className={styles.brandDot} />
             <span className={styles.brandText}>
@@ -436,14 +476,41 @@ function ShellContent({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <div className={styles.topbarCenter}>
-          <nav className={styles.pillNav} aria-label="Basculer entre agenda et tâches">
-            <Link href="/calendar" data-active={active === "/calendar" || undefined}>
-              <CalendarDaysIcon aria-hidden="true" />
-            </Link>
-            <Link href="/tasks" data-active={active === "/tasks" || undefined}>
-              <CheckCircleIcon aria-hidden="true" />
-            </Link>
-          </nav>
+          {onCalendarPage ? (
+            <div className={styles.calendarCluster}>
+              <div className={styles.calendarStepper}>
+                <button type="button" onClick={() => changeCalendarMonth("previous")} aria-label="Mois précédent">
+                  <ChevronLeftIcon aria-hidden="true" />
+                </button>
+                <span className={styles.calendarLabel}>{calendarTopbar.monthLabel}</span>
+                <button type="button" onClick={() => changeCalendarMonth("next")} aria-label="Mois suivant">
+                  <ChevronRightIcon aria-hidden="true" />
+                </button>
+              </div>
+              <div className={styles.calendarViewSwitch} role="tablist" aria-label="Changer la vue du calendrier">
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={calendarTopbar.viewMode === "month" || undefined}
+                  aria-selected={calendarTopbar.viewMode === "month"}
+                  onClick={() => setCalendarView("month")}
+                >
+                  <Squares2X2Icon aria-hidden="true" />
+                  <span>Mois</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={calendarTopbar.viewMode === "list" || undefined}
+                  aria-selected={calendarTopbar.viewMode === "list"}
+                  onClick={() => setCalendarView("list")}
+                >
+                  <ListBulletIcon aria-hidden="true" />
+                  <span>Liste</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className={styles.topbarRight}>
           <button
@@ -579,12 +646,18 @@ function ShellContent({ children }: { children: ReactNode }) {
                   <span>{loadingSession ? "Connexion…" : "Connexion Google"}</span>
                 </button>
               )}
-              <Link href="/settings" role="menuitem">
-                <Cog6ToothIcon aria-hidden="true" />
-                <span>Paramètres</span>
-              </Link>
             </div>
           </div>
+          <nav className={styles.appSwitch} aria-label="Basculer entre calendrier et tâches">
+            <Link href="/calendar" data-active={active === "/calendar" || undefined}>
+              <CalendarDaysIcon aria-hidden="true" />
+              <span>Calendrier</span>
+            </Link>
+            <Link href="/tasks" data-active={active === "/tasks" || undefined}>
+              <CheckCircleIcon aria-hidden="true" />
+              <span>Tâches</span>
+            </Link>
+          </nav>
         </div>
       </header>
 
