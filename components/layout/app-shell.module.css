@@ -18,7 +18,6 @@
   gap: 12px;
   padding: 12px clamp(18px, 5vw, 28px);
   background: var(--fc-background);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
 
 .topbarLeft {
@@ -35,14 +34,14 @@
 .notificationButton {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  background: var(--surface);
-  color: var(--text-muted);
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  transition: color 0.18s ease, transform 0.18s ease;
 }
 
 .menuButton:hover,
@@ -55,9 +54,7 @@
 .todayButton:focus-visible,
 .searchButton:focus-visible,
 .notificationButton:focus-visible {
-  border-color: rgba(56, 189, 248, 0.55);
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--surface) 60%, var(--accent-soft));
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
@@ -69,11 +66,11 @@
 .todayBadge {
   display: inline-grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   border: 1px solid currentColor;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
@@ -90,15 +87,9 @@
   position: relative;
 }
 
-.notificationButton[data-open] {
-  border-color: rgba(56, 189, 248, 0.6);
-  background: color-mix(in srgb, var(--surface) 50%, var(--accent-soft));
-  color: var(--text-primary);
-}
-
+.notificationButton[data-open],
 .notificationButton[data-has-unread] {
-  border-color: rgba(56, 189, 248, 0.75);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .notificationBadge {
@@ -126,14 +117,11 @@
   text-decoration: none;
   padding: 4px 10px;
   border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .topbarBrand:hover {
   transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.45);
 }
 
 .brandDot {
@@ -166,39 +154,131 @@
   justify-content: center;
 }
 
-.pillNav {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid rgba(0, 0, 0, 0.45);
-}
-
-.pillNav a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  color: var(--text-muted);
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.pillNav a[data-active],
-.pillNav a:hover {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
-  color: var(--text-primary);
-}
-
 .topbarRight {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
   position: relative;
+}
+
+.calendarCluster {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.calendarStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+
+.calendarStepper button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
+  display: grid;
+  place-items: center;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.calendarStepper button:hover,
+.calendarStepper button:focus-visible {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.calendarStepper svg {
+  width: 18px;
+  height: 18px;
+}
+
+.calendarLabel {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+.calendarViewSwitch {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  gap: 4px;
+}
+
+.calendarViewSwitch button {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
+}
+
+.calendarViewSwitch button[data-active] {
+  background: rgba(56, 189, 248, 0.22);
+  color: var(--text-primary);
+}
+
+.calendarViewSwitch button:hover,
+.calendarViewSwitch button:focus-visible {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.calendarViewSwitch svg {
+  width: 18px;
+  height: 18px;
+}
+
+.appSwitch {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  gap: 4px;
+}
+
+.appSwitch a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--text-subtle);
+  font-size: 0.78rem;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
+}
+
+.appSwitch a[data-active] {
+  background: rgba(56, 189, 248, 0.28);
+  color: var(--text-primary);
+}
+
+.appSwitch a:hover,
+.appSwitch a:focus-visible {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.appSwitch svg {
+  width: 18px;
+  height: 18px;
 }
 
 .notificationsWrapper {
