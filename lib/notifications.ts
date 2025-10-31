@@ -89,40 +89,40 @@ function buildEventNotification(event: FormattedCalendarEvent, now: Date): Dashb
 }
 
 function buildTaskNotifications(list: FormattedTaskList, now: Date): DashboardNotification[] {
-  return list.tasks
-    .map((task) => {
-      const dueIso = task.due?.iso;
-      if (!dueIso || task.status === "completed") {
-        return null;
-      }
-      const dueDate = new Date(dueIso);
-      if (Number.isNaN(dueDate.getTime())) {
-        return null;
-      }
-      const diffHours = (dueDate.getTime() - now.getTime()) / (60 * 60 * 1000);
-      if (diffHours > 48) {
-        return null;
-      }
+  return list.tasks.reduce<DashboardNotification[]>((accumulator, task) => {
+    const dueIso = task.due?.iso;
+    if (!dueIso || task.status === "completed") {
+      return accumulator;
+    }
+    const dueDate = new Date(dueIso);
+    if (Number.isNaN(dueDate.getTime())) {
+      return accumulator;
+    }
+    const diffHours = (dueDate.getTime() - now.getTime()) / (60 * 60 * 1000);
+    if (diffHours > 48) {
+      return accumulator;
+    }
 
-      const relative = formatRelativeTime(dueDate, now);
-      const title = task.title || "Tâche";
-      const overdue = diffHours < 0;
-      const message = overdue
-        ? `La tâche "${title}" est en retard (${relative}).`
-        : `La tâche "${title}" est à rendre (${relative}).`;
+    const relative = formatRelativeTime(dueDate, now);
+    const title = task.title || "Tâche";
+    const overdue = diffHours < 0;
+    const message = overdue
+      ? `La tâche "${title}" est en retard (${relative}).`
+      : `La tâche "${title}" est à rendre (${relative}).`;
 
-      return {
-        id: `task:${task.id}`,
-        title,
-        message,
-        timestamp: dueDate.toISOString(),
-        category: "task",
-        read: false,
-        source: "auto",
-        action: { label: "Ouvrir les tâches", href: "/tasks" },
-      } satisfies DashboardNotification;
-    })
-    .filter((notification): notification is DashboardNotification => Boolean(notification));
+    accumulator.push({
+      id: `task:${task.id}`,
+      title,
+      message,
+      timestamp: dueDate.toISOString(),
+      category: "task",
+      read: false,
+      source: "auto",
+      action: { label: "Ouvrir les tâches", href: "/tasks" },
+    });
+
+    return accumulator;
+  }, []);
 }
 
 export function deriveNotificationsFromData(
