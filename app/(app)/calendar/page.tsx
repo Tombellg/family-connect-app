@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { TouchEvent as ReactTouchEvent } from "react";
 import {
   Bars3Icon,
   CalendarDaysIcon,
@@ -9,7 +10,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ListBulletIcon,
-  MagnifyingGlassIcon,
   Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
@@ -69,6 +69,14 @@ const formatDateKey = (value: Date) => {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (value: string) => {
+  const [rawYear, rawMonth, rawDay] = value.split("-");
+  const year = Number.parseInt(rawYear ?? "0", 10);
+  const month = Number.parseInt(rawMonth ?? "1", 10) - 1;
+  const day = Number.parseInt(rawDay ?? "1", 10);
+  return new Date(year, month, day);
 };
 
 const buildMonthMatrix = (current: Date): MonthCell[][] => {
@@ -234,7 +242,7 @@ export default function CalendarPage() {
   const { events, taskLists, createEvent } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventDraft, setEventDraft] = useState({
     summary: "",
     date: formatDateKey(new Date()),
@@ -252,7 +260,16 @@ export default function CalendarPage() {
   const gridRef = useRef<HTMLDivElement | null>(null);
   const composerFormRef = useRef<HTMLFormElement | null>(null);
   const dayRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const [searchTerm, setSearchTerm] = useState("");
+  const selectedDateRef = useRef<Date | null>(selectedDate);
+  const [showDayDetails, setShowDayDetails] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [swipeTransition, setSwipeTransition] = useState(false);
+  const swipeStateRef = useRef<{ startX: number; startY: number; active: boolean } | null>(null);
+  const swipeLastOffsetRef = useRef(0);
+
+  useEffect(() => {
+    selectedDateRef.current = selectedDate;
+  }, [selectedDate]);
 
   const paletteBySource = useMemo(() => {
     const map = new Map<string, string>();
@@ -370,47 +387,17 @@ export default function CalendarPage() {
     return map;
   }, [enabledSources, events, paletteBySource, taskLists]);
 
-  const filteredItemsByDay = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    if (!query) {
-      return itemsByDay;
-    }
-    const map = new Map<string, CalendarItem[]>();
-    itemsByDay.forEach((items, key) => {
-      const matches = items.filter((item) => {
-        const haystack = `${item.title} ${item.subtitle ?? ""}`.toLowerCase();
-        return haystack.includes(query);
-      });
-      if (matches.length) {
-        map.set(key, matches);
-      }
-    });
-
-    map.forEach((items) => {
-      items.sort((a, b) => {
-        if (a.rawDate && b.rawDate) {
-          return a.rawDate.getTime() - b.rawDate.getTime();
-        }
-        if (a.rawDate) return -1;
-        if (b.rawDate) return 1;
-        return a.title.localeCompare(b.title);
-      });
-    });
-
-    return map;
-  }, [itemsByDay, searchTerm]);
-
   const listItems = useMemo(() => {
-    const days = Array.from(filteredItemsByDay.keys()).sort();
+    const days = Array.from(itemsByDay.keys()).sort();
     return days.map((key) => ({
       key,
       label: formatListLabel(new Date(key)),
-      items: filteredItemsByDay.get(key) ?? [],
+      items: itemsByDay.get(key) ?? [],
     }));
-  }, [filteredItemsByDay]);
+  }, [itemsByDay]);
 
-  const selectedKey = formatDateKey(selectedDate);
-  const dayItems = filteredItemsByDay.get(selectedKey) ?? [];
+  const selectedKey = selectedDate ? formatDateKey(selectedDate) : null;
+  const dayItems = selectedKey ? itemsByDay.get(selectedKey) ?? [] : [];
   const weeks = useMemo(() => buildMonthMatrix(currentMonth), [currentMonth]);
 
   const todayKey = formatDateKey(new Date());
@@ -418,6 +405,7 @@ export default function CalendarPage() {
   const dayPreview = dayItems.slice(0, MAX_DAY_DETAILS);
   const dayOverflow = Math.max(dayItems.length - dayPreview.length, 0);
   const agendaSections = listItems.slice(0, MAX_AGENDA_SECTIONS);
+  const composerDate = useMemo(() => selectedDate ?? parseDateKey(eventDraft.date), [eventDraft.date, selectedDate]);
 
   const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -462,10 +450,156 @@ export default function CalendarPage() {
   };
 
   const handleDaySelect = (cell: MonthCell) => {
+    const key = formatDateKey(cell.date);
+    const sameDay = selectedKey === key;
     setSelectedDate(cell.date);
+    setShowDayDetails((current) => (sameDay ? !current : true));
     setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
     setComposerTarget((current) => (current === cell.key ? null : cell.key));
     setFormMessage(null);
+  };
+
+  useEffect(() => {
+    const handleFocusToday: EventListener = () => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      setSelectedDate(now);
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+      setEventDraft((current) => ({ ...current, date: formatDateKey(now) }));
+      setComposerTarget(null);
+      setFormMessage(null);
+      setShowDayDetails(true);
+      window.setTimeout(() => {
+        const button = dayRefs.current.get(formatDateKey(now));
+        button?.focus();
+      }, 0);
+    };
+
+    const handleSearchSelect = (event: Event) => {
+      const custom = event as CustomEvent<{ dateKey?: string | null }>;
+      if (!custom.detail?.dateKey) {
+        return;
+      }
+      const date = parseDateKey(custom.detail.dateKey);
+      setSelectedDate(date);
+      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+      setEventDraft((current) => ({ ...current, date: formatDateKey(date) }));
+      setComposerTarget(null);
+      setFormMessage(null);
+      setShowDayDetails(true);
+      window.setTimeout(() => {
+        const button = dayRefs.current.get(formatDateKey(date));
+        button?.focus();
+      }, 0);
+    };
+
+    const handleCreate = () => {
+      const base = selectedDateRef.current ?? new Date();
+      const normalized = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+      const key = formatDateKey(normalized);
+      setSelectedDate(normalized);
+      setCurrentMonth(new Date(normalized.getFullYear(), normalized.getMonth(), 1));
+      setEventDraft((current) => ({ ...current, date: key }));
+      setComposerTarget(key);
+      setMenuOpen(false);
+      setShowDayDetails(true);
+    };
+
+    window.addEventListener("fc:focus-today", handleFocusToday);
+    window.addEventListener("fc:search-select", handleSearchSelect);
+    window.addEventListener("fc:create", handleCreate);
+    window.addEventListener("fc:create-event", handleCreate);
+    return () => {
+      window.removeEventListener("fc:focus-today", handleFocusToday);
+      window.removeEventListener("fc:search-select", handleSearchSelect);
+      window.removeEventListener("fc:create", handleCreate);
+      window.removeEventListener("fc:create-event", handleCreate);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const openDrawer = () => setMenuOpen(true);
+    const closeDrawer = () => setMenuOpen(false);
+    window.addEventListener("fc:open-drawer", openDrawer);
+    window.addEventListener("fc:close-drawer", closeDrawer);
+    return () => {
+      window.removeEventListener("fc:open-drawer", openDrawer);
+      window.removeEventListener("fc:close-drawer", closeDrawer);
+    };
+  }, []);
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1) {
+      return;
+    }
+    const touch = event.touches[0];
+    swipeStateRef.current = { startX: touch.clientX, startY: touch.clientY, active: false };
+    swipeLastOffsetRef.current = 0;
+    setSwipeTransition(false);
+  };
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const state = swipeStateRef.current;
+    if (!state) {
+      return;
+    }
+    const touch = event.touches[0];
+    const dx = touch.clientX - state.startX;
+    const dy = touch.clientY - state.startY;
+    if (!state.active) {
+      if (Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy)) {
+        state.active = true;
+      } else if (Math.abs(dy) > Math.abs(dx)) {
+        swipeStateRef.current = null;
+        setSwipeOffset(0);
+        return;
+      } else {
+        return;
+      }
+    }
+    event.preventDefault();
+    swipeLastOffsetRef.current = dx;
+    setSwipeOffset(dx);
+  };
+
+  const resetSwipe = (withTransition: boolean) => {
+    if (withTransition) {
+      setSwipeTransition(true);
+      setSwipeOffset(0);
+      window.setTimeout(() => {
+        setSwipeTransition(false);
+      }, 220);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const state = swipeStateRef.current;
+    const offset = swipeLastOffsetRef.current;
+    swipeStateRef.current = null;
+    const width = gridRef.current?.offsetWidth ?? 0;
+    const threshold = Math.max(width * 0.22, 80);
+    if (!state || !state.active) {
+      if (offset !== 0) {
+        resetSwipe(true);
+      }
+      return;
+    }
+    if (Math.abs(offset) < threshold) {
+      resetSwipe(true);
+      return;
+    }
+    const direction = offset > 0 ? -1 : 1;
+    setSwipeTransition(true);
+    const travel = (width || window.innerWidth || 320) * (offset > 0 ? 1 : -1);
+    setSwipeOffset(travel);
+    window.setTimeout(() => {
+      changeMonth(direction);
+      setSwipeTransition(false);
+      setSwipeOffset(0);
+    }, 220);
   };
 
   useLayoutEffect(() => {
@@ -586,6 +720,7 @@ export default function CalendarPage() {
                         setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
                         setComposerTarget(null);
                         setFormMessage(null);
+                        setShowDayDetails(true);
                         setMenuOpen(false);
                       }}
                     >
@@ -620,7 +755,6 @@ export default function CalendarPage() {
           </div>
         </div>
       </aside>
-      {menuOpen ? <div className={styles.menuBackdrop} onClick={() => setMenuOpen(false)} /> : null}
       <section className={styles.workspace}>
         <header className={styles.toolbar}>
           <div className={styles.toolbarLeft}>
@@ -642,17 +776,6 @@ export default function CalendarPage() {
                 <ChevronRightIcon aria-hidden="true" />
               </button>
             </div>
-          </div>
-          <div className={styles.toolbarCenter}>
-            <label className={styles.searchField}>
-              <MagnifyingGlassIcon aria-hidden="true" />
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Rechercher…"
-              />
-            </label>
           </div>
           <div className={styles.toolbarRight}>
             <div className={styles.viewSwitch} role="tablist">
@@ -689,7 +812,18 @@ export default function CalendarPage() {
         </header>
         {viewMode === "month" ? (
           <div className={styles.monthLayout}>
-            <div className={styles.gridWrapper} ref={gridRef}>
+            <div
+              className={styles.gridWrapper}
+              ref={gridRef}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              style={{
+                transform: `translateX(${swipeOffset}px)`,
+                transition: swipeTransition ? "transform 0.22s ease" : undefined,
+              }}
+            >
               <div className={styles.weekdayHeader}>
                 {["L", "M", "M", "J", "V", "S", "D"].map((label) => (
                   <span key={label}>{label}</span>
@@ -699,7 +833,7 @@ export default function CalendarPage() {
                 {weeks.map((week, index) => (
                   <div key={index} className={styles.weekRow}>
                     {week.map((cell) => {
-                      const items = filteredItemsByDay.get(cell.key) ?? [];
+                      const items = itemsByDay.get(cell.key) ?? [];
                       const preview = items.slice(0, MAX_DAY_PREVIEW);
                       const overflow = Math.max(items.length - preview.length, 0);
                       const isSelected = cell.key === selectedKey;
@@ -778,7 +912,7 @@ export default function CalendarPage() {
                     />
                   </label>
                   <div className={styles.inlineMeta}>
-                    <span>{formatListLabel(selectedDate)}</span>
+                    <span>{formatListLabel(composerDate)}</span>
                     <label>
                       <input
                         type="checkbox"
@@ -845,50 +979,54 @@ export default function CalendarPage() {
                 </form>
               ) : null}
             </div>
-            <aside className={styles.dayPane}>
-              <h3>{formatListLabel(selectedDate)}</h3>
-              <ul className={styles.dayList}>
-                {dayPreview.map((item) => (
-                  <li key={item.id}>
-                    <span className={styles.dayBadge} style={item.color ? { backgroundColor: item.color } : undefined} />
-                    <div>
-                      <strong>{item.title}</strong>
-                      {item.timeLabel ? <span>{item.timeLabel}</span> : null}
-                      {item.subtitle ? <small>{item.subtitle}</small> : null}
-                    </div>
-                  </li>
-                ))}
-                {dayOverflow > 0 ? <li className={styles.dayMore}>+{dayOverflow} autres</li> : null}
-                {!dayItems.length ? <li className={styles.empty}>Aucun élément ce jour-là.</li> : null}
-              </ul>
-            </aside>
+            {showDayDetails && selectedDate ? (
+              <aside className={styles.dayPane}>
+                <h3>{formatListLabel(selectedDate)}</h3>
+                <ul className={styles.dayList}>
+                  {dayPreview.map((item) => (
+                    <li key={item.id}>
+                      <span className={styles.dayBadge} style={item.color ? { backgroundColor: item.color } : undefined} />
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.timeLabel ? <span>{item.timeLabel}</span> : null}
+                        {item.subtitle ? <small>{item.subtitle}</small> : null}
+                      </div>
+                    </li>
+                  ))}
+                  {dayOverflow > 0 ? <li className={styles.dayMore}>+{dayOverflow} autres</li> : null}
+                  {!dayItems.length ? <li className={styles.empty}>Aucun élément ce jour-là.</li> : null}
+                </ul>
+              </aside>
+            ) : null}
           </div>
         ) : (
           <div className={styles.agendaView}>
-            {agendaSections.map((section) => {
-              const preview = section.items.slice(0, MAX_AGENDA_ITEMS_PER_DAY);
-              const overflow = Math.max(section.items.length - preview.length, 0);
-              return (
-                <article key={section.key} className={styles.agendaSection}>
-                  <header>
-                    <span>{section.label}</span>
-                  </header>
-                  <ul>
-                    {preview.map((item) => (
-                      <li key={item.id}>
-                        <span className={styles.timeBadge}>{item.timeLabel ?? "Toute la journée"}</span>
-                        <div>
-                          <strong>{item.title}</strong>
-                          {item.subtitle ? <small>{item.subtitle}</small> : null}
-                        </div>
-                      </li>
-                    ))}
-                    {overflow > 0 ? <li className={styles.dayMore}>+{overflow} supplémentaires</li> : null}
-                  </ul>
-                </article>
-              );
-            })}
-            {!agendaSections.length ? <p className={styles.empty}>Aucun élément à afficher pour le moment.</p> : null}
+            <div className={styles.agendaInner}>
+              {agendaSections.map((section) => {
+                const preview = section.items.slice(0, MAX_AGENDA_ITEMS_PER_DAY);
+                const overflow = Math.max(section.items.length - preview.length, 0);
+                return (
+                  <article key={section.key} className={styles.agendaSection}>
+                    <header>
+                      <span>{section.label}</span>
+                    </header>
+                    <ul>
+                      {preview.map((item) => (
+                        <li key={item.id}>
+                          <span className={styles.timeBadge}>{item.timeLabel ?? "Toute la journée"}</span>
+                          <div>
+                            <strong>{item.title}</strong>
+                            {item.subtitle ? <small>{item.subtitle}</small> : null}
+                          </div>
+                        </li>
+                      ))}
+                      {overflow > 0 ? <li className={styles.dayMore}>+{overflow} supplémentaires</li> : null}
+                    </ul>
+                  </article>
+                );
+              })}
+              {!agendaSections.length ? <p className={styles.empty}>Aucun élément à afficher pour le moment.</p> : null}
+            </div>
           </div>
         )}
       </section>

@@ -6,10 +6,13 @@ import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
+  Bars3Icon,
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon,
   CheckCircleIcon,
   Cog6ToothIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
@@ -128,6 +131,15 @@ function GoogleOneTapPrompt() {
   return <div id="one-tap-anchor" className={styles.oneTapAnchor} aria-hidden />;
 }
 
+type SearchSuggestion = {
+  id: string;
+  label: string;
+  description?: string;
+  dateKey: string | null;
+  href?: string;
+  type: "event" | "task";
+};
+
 function ShellContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -140,47 +152,297 @@ function ShellContent({ children }: { children: ReactNode }) {
     syncNow,
     lastSync,
     syncError,
+    events,
+    taskLists,
   } = useDashboard();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const [desktopCreateOpen, setDesktopCreateOpen] = useState(false);
+  const [mobileCreateOpen, setMobileCreateOpen] = useState(false);
+  const desktopCreateRef = useRef<HTMLDivElement | null>(null);
 
   const active = useMemo(() => pathname?.replace(/\/$/, "") || "/calendar", [pathname]);
 
   useEffect(() => {
-    setMenuOpen(false);
+    setProfileOpen(false);
+    setDesktopCreateOpen(false);
+    setMobileCreateOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!profileOpen) {
       return;
     }
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        setProfileOpen(false);
       }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, [menuOpen]);
+  }, [profileOpen]);
+
+  useEffect(() => {
+    if (!profileOpen) {
+      return;
+    }
+    const closeOnClick = (event: MouseEvent) => {
+      const menu = profileMenuRef.current;
+      if (!menu) {
+        return;
+      }
+      if (menu.contains(event.target as Node)) {
+        return;
+      }
+      setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnClick);
+    return () => document.removeEventListener("mousedown", closeOnClick);
+  }, [profileOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return;
+    }
+    const closeOnOutside = (event: MouseEvent) => {
+      if (!popoverRef.current) {
+        return;
+      }
+      if (!popoverRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (searchOpen) {
+      window.setTimeout(() => searchRef.current?.focus(), 60);
+    }
+  }, [searchOpen]);
+
+  const searchSource = useMemo<SearchSuggestion[]>(() => {
+    const items: SearchSuggestion[] = [];
+    events.forEach((event) => {
+      const key = event.start?.iso?.split("T")[0] ?? null;
+      items.push({
+        id: `event:${event.id}`,
+        label: event.summary ?? "Sans titre",
+        description: event.location ?? event.calendar ?? undefined,
+        dateKey: key,
+        type: "event",
+      });
+    });
+    taskLists.forEach((list) => {
+      list.tasks.forEach((task) => {
+        const key = task.due?.iso?.split("T")[0] ?? null;
+        items.push({
+          id: `task:${list.id}:${task.id}`,
+          label: task.title,
+          description: list.title,
+          dateKey: key,
+          type: "task",
+        });
+      });
+    });
+    return items;
+  }, [events, taskLists]);
+
+  const suggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return searchSource.slice(0, 6);
+    }
+    return searchSource
+      .filter((item) => {
+        const haystack = `${item.label} ${item.description ?? ""}`.toLowerCase();
+        return haystack.includes(query);
+      })
+      .slice(0, 10);
+  }, [searchSource, searchTerm]);
+
+  const handleSuggestion = (suggestion: SearchSuggestion) => {
+    if (suggestion.dateKey) {
+      window.dispatchEvent(
+        new CustomEvent("fc:search-select", {
+          detail: { dateKey: suggestion.dateKey, type: suggestion.type, id: suggestion.id },
+        })
+      );
+    }
+    setSearchOpen(false);
+    setSearchTerm("");
+  };
+
+  useEffect(() => {
+    if (!desktopCreateOpen) {
+      return;
+    }
+    const closeOnOutside = (event: MouseEvent) => {
+      if (!desktopCreateRef.current?.contains(event.target as Node)) {
+        setDesktopCreateOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDesktopCreateOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [desktopCreateOpen]);
+
+  useEffect(() => {
+    if (!mobileCreateOpen) {
+      return;
+    }
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileCreateOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [mobileCreateOpen]);
+
+  const triggerCreate = (type: "event" | "task") => {
+    if (type === "event") {
+      window.dispatchEvent(new CustomEvent("fc:create"));
+      window.dispatchEvent(new CustomEvent("fc:create-event"));
+    } else {
+      window.dispatchEvent(new CustomEvent("fc:create-task"));
+    }
+    setDesktopCreateOpen(false);
+    setMobileCreateOpen(false);
+  };
 
   const avatar = session?.user?.image;
   const initials = session?.user?.name?.slice(0, 2).toUpperCase();
+  const today = new Date();
+  const todayLabel = today.getDate();
 
   return (
     <div className={styles.viewport}>
       <header className={styles.topbar}>
-        <Link href="/calendar" className={styles.brand}>
-          <span className={styles.brandDot} />
-          <span className={styles.brandText}>
-            <strong>Family Connect</strong>
-            <span>Pilotage familial</span>
-          </span>
-        </Link>
-        <div className={styles.topbarActions}>
+        <div className={styles.topbarLeft}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            onClick={() => window.dispatchEvent(new CustomEvent("fc:open-drawer"))}
+            aria-label="Ouvrir le menu latéral"
+          >
+            <Bars3Icon aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={styles.createButton}
+            onClick={() => setDesktopCreateOpen((value) => !value)}
+            aria-label="Créer un évènement ou une tâche"
+            aria-haspopup="menu"
+            aria-expanded={desktopCreateOpen}
+          >
+            <PlusIcon aria-hidden="true" />
+          </button>
+          <div
+            ref={desktopCreateRef}
+            className={desktopCreateOpen ? styles.createPopoverOpen : styles.createPopover}
+            role="menu"
+          >
+            <button type="button" onClick={() => triggerCreate("event")} role="menuitem">
+              Nouvel évènement
+            </button>
+            <button type="button" onClick={() => triggerCreate("task")} role="menuitem">
+              Nouvelle tâche
+            </button>
+          </div>
+          <button
+            type="button"
+            className={styles.todayButton}
+            onClick={() => window.dispatchEvent(new CustomEvent("fc:focus-today"))}
+            aria-label="Mettre en avant la date du jour"
+          >
+            <span className={styles.todayBadge}>{todayLabel}</span>
+          </button>
+          <Link href="/calendar" className={styles.topbarBrand}>
+            <span className={styles.brandDot} />
+            <span className={styles.brandText}>
+              <strong>Family Connect</strong>
+              <span>Pilotage familial</span>
+            </span>
+          </Link>
+        </div>
+        <div className={styles.topbarCenter}>
+          <nav className={styles.pillNav} aria-label="Basculer entre agenda et tâches">
+            <Link href="/calendar" data-active={active === "/calendar" || undefined}>
+              <CalendarDaysIcon aria-hidden="true" />
+            </Link>
+            <Link href="/tasks" data-active={active === "/tasks" || undefined}>
+              <CheckCircleIcon aria-hidden="true" />
+            </Link>
+          </nav>
+        </div>
+        <div className={styles.topbarRight}>
+          <button
+            type="button"
+            className={styles.searchButton}
+            onClick={() => setSearchOpen((value) => !value)}
+            aria-expanded={searchOpen}
+            aria-haspopup="dialog"
+            aria-label={searchOpen ? "Fermer la recherche" : "Rechercher"}
+          >
+            <MagnifyingGlassIcon aria-hidden="true" />
+          </button>
+          {searchOpen ? (
+            <div className={styles.searchPopover} ref={popoverRef} role="dialog" aria-label="Recherche">
+              <label className={styles.searchHeader}>
+                <MagnifyingGlassIcon aria-hidden="true" />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Rechercher un évènement ou une tâche"
+                />
+              </label>
+              <div className={styles.searchSuggestions}>
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    className={styles.suggestionButton}
+                    onClick={() => handleSuggestion(suggestion)}
+                  >
+                    <span>{suggestion.label}</span>
+                    {suggestion.description ? <small>{suggestion.description}</small> : null}
+                  </button>
+                ))}
+                {!suggestions.length ? <small>Aucun résultat</small> : null}
+              </div>
+            </div>
+          ) : null}
           <button
             type="button"
             className={styles.profileButton}
-            onClick={() => setMenuOpen((value) => !value)}
-            aria-expanded={menuOpen}
+            onClick={() => setProfileOpen((value) => !value)}
+            aria-expanded={profileOpen}
             aria-controls="app-shell-profile-menu"
             aria-label={isAuthenticated ? "Ouvrir le menu du profil" : "Ouvrir le menu de connexion"}
           >
@@ -196,7 +458,8 @@ function ShellContent({ children }: { children: ReactNode }) {
           </button>
           <div
             id="app-shell-profile-menu"
-            className={menuOpen ? styles.profileMenuOpen : styles.profileMenu}
+            ref={profileMenuRef}
+            className={profileOpen ? styles.profileMenuOpen : styles.profileMenu}
             role="menu"
           >
             <div className={styles.menuSection}>
@@ -241,7 +504,31 @@ function ShellContent({ children }: { children: ReactNode }) {
       </header>
 
       <main className={styles.main}>{children}</main>
-      {menuOpen ? <div className={styles.settingsBackdrop} onClick={() => setMenuOpen(false)} /> : null}
+
+      <button
+        type="button"
+        className={styles.mobileCreateButton}
+        onClick={() => setMobileCreateOpen((value) => !value)}
+        aria-label={mobileCreateOpen ? "Fermer le menu de création" : "Ouvrir le menu de création"}
+        aria-expanded={mobileCreateOpen}
+      >
+        <PlusIcon aria-hidden="true" />
+      </button>
+      <nav
+        className={mobileCreateOpen ? styles.mobileCreateSheetOpen : styles.mobileCreateSheet}
+        aria-label="Création rapide"
+      >
+        <header>
+          <span>Créer</span>
+          <button type="button" onClick={() => setMobileCreateOpen(false)} aria-label="Fermer">
+            ×
+          </button>
+        </header>
+        <div>
+          <button type="button" onClick={() => triggerCreate("event")}>Nouvel évènement</button>
+          <button type="button" onClick={() => triggerCreate("task")}>Nouvelle tâche</button>
+        </div>
+      </nav>
 
       <GoogleOneTapPrompt />
     </div>

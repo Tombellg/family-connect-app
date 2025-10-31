@@ -1,278 +1,354 @@
 .page {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: clamp(22px, 5vw, 36px);
+  width: 100%;
   height: 100%;
   min-height: 0;
-  flex: 1;
-  overflow: auto;
-  padding-right: clamp(6px, 2vw, 16px);
 }
 
-.header {
+.page[data-menu-open] .workspace {
+  margin-left: clamp(240px, 28vw, 320px);
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: clamp(240px, 28vw, 320px);
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px;
+  background: var(--surface-strong);
+  border-right: 1px solid var(--surface-border);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  transform: translateX(-110%);
+  transition: transform 0.28s ease;
+  overflow-y: auto;
+  pointer-events: none;
+  z-index: 25;
 }
 
-.headerTop {
+.panel[data-open] {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.panelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.panelSection header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupLabel {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.groupLists {
+  display: grid;
+  gap: 8px;
+}
+
+.listButton,
+.listButtonActive {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.headerLabel {
-  font-size: 0.85rem;
-  color: var(--text-subtle);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.addButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.26);
-  background: rgba(15, 23, 42, 0.55);
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.addButton svg {
-  width: 18px;
-  height: 18px;
-}
-
-.addButton:hover {
-  transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.35);
-}
-
-.addButton[aria-pressed="true"] {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: rgba(56, 189, 248, 0.45);
-}
-
-.listPicker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.listChip,
-.listChipActive {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.6);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 90%, transparent);
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.listChipActive {
-  color: var(--text-primary);
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.35);
-  transform: translateY(-1px);
-}
-
-.listChip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(148, 163, 184, 0.45);
-}
-
-.listChip small,
-.listChipActive small {
-  background: rgba(148, 163, 184, 0.18);
-  padding: 2px 6px;
+.listButton small,
+.listButtonActive small {
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+
+.listButton:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.listButtonActive {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--text-primary);
+}
+
+.panelEmpty {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
 }
 
 .workspace {
-  display: grid;
-  gap: clamp(20px, 5vw, 32px);
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 12px clamp(12px, 5vw, 28px) 32px;
+  overflow: auto;
 }
 
-.composerCard {
-  padding: 18px clamp(16px, 3vw, 24px);
+.listCard {
+  width: min(720px, 100%);
+  background: var(--fc-surface);
+  border: 1px solid var(--surface-border);
   border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.68);
-  backdrop-filter: blur(22px);
-  box-shadow: 0 20px 36px rgba(8, 47, 73, 0.26);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.composerRow {
+.listHeader {
+  padding: 18px clamp(16px, 4vw, 24px);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.listTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listTitle span {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.listTitle small {
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.taskList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.addRow {
+  padding: 18px clamp(16px, 4vw, 24px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.addTrigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px dashed rgba(56, 189, 248, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.addTrigger svg {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+.addTrigger:hover {
+  border-color: rgba(56, 189, 248, 0.7);
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.addFormRow {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-  align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 18px;
-  background: rgba(2, 6, 23, 0.42);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  align-items: center;
 }
 
-.composerRow input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.composerRow input::placeholder {
-  color: var(--text-muted);
-}
-
-.composerIcon {
+.addIcon {
   width: 20px;
   height: 20px;
   color: var(--accent);
 }
 
-.dismissComposer {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.55);
-  display: grid;
-  place-items: center;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+.addInput {
+  border: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fc-surface) 90%, transparent);
+  color: inherit;
+  font-size: 0.95rem;
+  padding: 10px 12px;
 }
 
-.dismissComposer:hover {
-  transform: rotate(8deg);
-  border-color: rgba(248, 113, 113, 0.4);
-  color: #fecaca;
-}
-
-.iconToggle,
-.iconToggleActive {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.6);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+.addInput::placeholder {
   color: var(--text-muted);
 }
 
-.iconToggle svg,
-.iconToggleActive svg {
+.toggleButton,
+.toggleButtonActive {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.toggleButton svg,
+.toggleButtonActive svg {
   width: 20px;
   height: 20px;
 }
 
-.iconToggle:hover {
-  transform: rotate(-6deg);
-  border-color: rgba(56, 189, 248, 0.4);
-  color: var(--text-primary);
-}
-
-.iconToggleActive {
+.toggleButton:hover {
   border-color: rgba(56, 189, 248, 0.45);
-  background: rgba(56, 189, 248, 0.16);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.toggleButtonActive {
+  border-color: rgba(56, 189, 248, 0.65);
+  background: rgba(56, 189, 248, 0.24);
   color: var(--text-primary);
 }
 
-.submitButton,
-.submitButtonCelebrating {
+.addSubmit,
+.addSubmitCelebrating {
   border: none;
   border-radius: 14px;
   padding: 10px 16px;
   font-weight: 600;
+  font-size: 0.92rem;
   cursor: pointer;
   background: var(--accent-gradient);
   color: #0b1120;
-  box-shadow: 0 16px 32px rgba(14, 165, 233, 0.32);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.submitButton:hover {
+.addSubmit:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 12px 24px rgba(56, 189, 248, 0.35);
 }
 
-.submitButtonCelebrating {
-  animation: pulseButton 1s ease-in-out;
+.addSubmitCelebrating {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.addCancel {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.addCancel:hover {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+  transform: translateY(-1px);
 }
 
 .notesField {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  margin-top: 16px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-subtle);
 }
 
 .notesField textarea {
-  min-height: 70px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(2, 6, 23, 0.4);
-  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
+  padding: 10px 12px;
   color: inherit;
+  min-height: 72px;
   resize: vertical;
 }
 
 .quickActions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 10px;
-  margin-top: 16px;
+  align-items: center;
+  font-size: 0.8rem;
 }
 
 .quickActions button {
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
+  color: var(--text-muted);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.5);
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  gap: 8px;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .quickActions button svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
-.quickActions button:hover {
-  transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.4);
-  color: var(--text-primary);
-}
-
+.quickActions button:hover,
 .quickActionActive {
-  background: rgba(56, 189, 248, 0.16) !important;
-  border-color: rgba(56, 189, 248, 0.4) !important;
-  color: var(--text-primary) !important;
+  background: rgba(56, 189, 248, 0.22);
+  color: var(--text-primary);
 }
 
 .dueLabel {
@@ -282,64 +358,64 @@
 }
 
 .calendarPanel {
-  margin-top: 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(2, 6, 23, 0.42);
-  padding: 16px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  padding: 10px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
+  border: 1px solid rgba(0, 0, 0, 0.45);
 }
 
 .clearDate {
-  justify-self: end;
+  align-self: flex-end;
   border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  border-radius: 12px;
+  padding: 6px 10px;
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
   cursor: pointer;
-  transition: color 0.2s ease;
 }
 
 .clearDate:hover {
-  color: var(--text-primary);
+  background: rgba(248, 113, 113, 0.3);
+  color: #fee2e2;
 }
 
 .recurrencePanel {
-  margin-top: 16px;
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(2, 6, 23, 0.42);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
+  border: 1px solid rgba(0, 0, 0, 0.45);
 }
 
 .recurrenceRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .recurrenceRow label,
-.monthDayField,
 .recurrenceEnd label {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   font-size: 0.78rem;
   color: var(--text-subtle);
 }
 
 .recurrenceRow select,
-.recurrenceRow input,
-.monthDayField input,
 .recurrenceEnd select,
-.recurrenceEnd input {
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.6);
-  padding: 8px 10px;
+.recurrenceEnd input,
+.recurrenceRow input {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
   color: inherit;
+  padding: 8px 10px;
 }
 
 .weekdayRow {
@@ -350,229 +426,180 @@
 
 .weekdayButton,
 .weekdayActive {
-  padding: 6px 10px;
+  border: none;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.5);
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--fc-surface) 82%, transparent);
   color: var(--text-muted);
-  font-size: 0.75rem;
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .weekdayButton:hover {
-  transform: translateY(-1px);
-  border-color: rgba(56, 189, 248, 0.4);
-}
-
-.weekdayActive {
-  background: rgba(56, 189, 248, 0.16);
-  border-color: rgba(56, 189, 248, 0.42);
+  background: rgba(56, 189, 248, 0.22);
   color: var(--text-primary);
 }
 
-.recurrenceEnd {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.weekdayActive {
+  background: rgba(56, 189, 248, 0.3);
+  color: var(--text-primary);
 }
 
-.recurrenceSummary {
+.monthDayField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.error {
-  margin-top: 12px;
-  color: #fca5a5;
-  font-size: 0.8rem;
-}
-
-.taskColumn {
-  display: grid;
-  gap: 14px;
-  border-radius: 24px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.64);
-  padding: 20px clamp(18px, 3vw, 28px);
-  backdrop-filter: blur(20px);
-}
-
-.taskColumn header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.82rem;
   color: var(--text-subtle);
 }
 
-.taskList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.monthDayField input {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
+  color: inherit;
+  padding: 8px 10px;
+}
+
+.recurrenceEnd {
   display: grid;
   gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
-.taskList li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(2, 6, 23, 0.4);
-  transition: transform 0.2s ease, background 0.2s ease;
+.recurrenceSummary {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
 }
 
-.taskList li:hover {
-  transform: translateX(4px);
-  background: rgba(56, 189, 248, 0.12);
-}
-
-.checkbox {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid rgba(148, 163, 184, 0.5);
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.checkbox:hover {
-  transform: scale(1.05);
-  border-color: rgba(56, 189, 248, 0.6);
-}
-
-.checkboxChecked {
-  background: var(--accent-gradient);
-  border-color: transparent;
-  position: relative;
-}
-
-.checkboxChecked::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 2px solid #0b1120;
-  border-top: 0;
-  border-left: 0;
-  transform: rotate(45deg);
-}
-
-.taskColumn strong {
-  font-size: 0.95rem;
-}
-
-.taskColumn p {
-  margin: 4px 0 0;
+.error {
+  color: #fecaca;
   font-size: 0.78rem;
+}
+
+.taskRow {
+  padding: 16px clamp(16px, 4vw, 24px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.taskLabel {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  color: var(--text-muted);
+}
+
+.taskLabel input {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
+.taskLabel strong {
+  display: block;
+  font-size: 0.96rem;
+  color: var(--text-primary);
+}
+
+.taskLabel p {
+  margin: 6px 0;
+  font-size: 0.82rem;
   color: var(--text-muted);
 }
 
 .taskMeta {
-  margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.72rem;
+  gap: 10px;
+  font-size: 0.75rem;
   color: var(--text-subtle);
 }
 
-.completedBlock {
-  border-radius: 18px;
-  background: rgba(2, 6, 23, 0.35);
-  padding: 12px 14px;
+.emptyRow {
+  padding: 18px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-subtle);
 }
 
-.completedBlock summary {
+.sectionDivider {
+  padding: 0;
+}
+
+.sectionDivider details {
+  background: color-mix(in srgb, var(--fc-surface) 88%, transparent);
+  border-top: 1px solid rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+  padding: 12px clamp(16px, 4vw, 24px);
+}
+
+.sectionDivider summary {
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  list-style: none;
 }
 
-.completedBlock ul {
+.sectionDivider summary::-webkit-details-marker {
+  display: none;
+}
+
+.sectionDivider ul {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.completedBlock ul {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
+.sectionDivider li {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  padding-bottom: 12px;
 }
 
-.completedBlock li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.45);
+.sectionDivider li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
-.completedBlock ul {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
+@media (max-width: 1080px) {
+  .page[data-menu-open] .workspace {
+    margin-left: 0;
+  }
+
+  .panel {
+    width: clamp(240px, 70vw, 320px);
+  }
 }
 
-.completedBlock li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.45);
+@media (max-width: 768px) {
+  .workspace {
+    padding: 10px 12px 84px;
+  }
+
+  .listCard {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    width: 100%;
+  }
+
+  .panel {
+    width: min(320px, 80vw);
+  }
 }
 
-.completedBlock ul {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.completedBlock li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.empty {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-@keyframes pulseButton {
+@keyframes pulse {
   0% {
     transform: scale(1);
   }
-  40% {
-    transform: scale(1.05);
+  50% {
+    transform: scale(1.08);
   }
   100% {
     transform: scale(1);
-  }
-}
-
-@media (max-width: 820px) {
-  .workspace {
-    grid-template-columns: 1fr;
-  }
-
-  .taskColumn {
-    order: 2;
   }
 }
