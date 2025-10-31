@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { FormattedCalendarEvent, FormattedTaskList } from "@/lib/google";
 import { buildRecurrenceRule } from "@/components/tasks/recurrence";
 import type { RecurrenceState } from "@/components/tasks/recurrence";
+import { CreateNotificationPayload, DashboardNotification, deriveNotificationsFromData } from "@/lib/notifications";
 
 export type DashboardSettings = {
   accent: "lagoon" | "sunset" | "forest" | "midnight";
@@ -55,6 +56,13 @@ export type DashboardContextValue = {
     description?: string;
   }) => Promise<void>;
   toggleTaskStatus: (listId: string, taskId: string, status: "needsAction" | "completed") => Promise<void>;
+  notifications: DashboardNotification[];
+  unreadNotifications: number;
+  pushNotification: (payload: CreateNotificationPayload) => string;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  dismissNotification: (id: string) => void;
+  clearNotifications: () => void;
 };
 
 const DashboardContext = createContext<DashboardContextValue | undefined>(undefined);
@@ -62,6 +70,8 @@ const DashboardContext = createContext<DashboardContextValue | undefined>(undefi
 const SETTINGS_STORAGE_KEY = "family-connect:settings";
 const FAMILY_STORAGE_KEY = "family-connect:family";
 const DATA_STORAGE_PREFIX = "family-connect:data:";
+const NOTIFICATIONS_STORAGE_KEY = "family-connect:notifications";
+const NOTIFICATION_STATE_STORAGE_KEY = "family-connect:notification-state";
 
 const DEFAULT_SETTINGS: DashboardSettings = {
   accent: "lagoon",
@@ -87,6 +97,18 @@ const ACCENT_MAP: Record<DashboardSettings["accent"], { solid: string; gradient:
     gradient: "linear-gradient(120deg, #312e81 0%, #4338ca 45%, #6366f1 100%)",
   },
 };
+
+type NotificationPersistenceState = {
+  read: boolean;
+  hidden?: boolean;
+};
+
+function generateNotificationId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+}
 
 function usePersistentState<T>(key: string, initial: T): [T, (value: T) => void] {
   const [state, setState] = useState<T>(initial);
@@ -133,6 +155,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [manualNotifications, setManualNotifications] = usePersistentState<DashboardNotification[]>(
+    NOTIFICATIONS_STORAGE_KEY,
+    []
+  );
+  const [notificationState, setNotificationState] = usePersistentState<Record<string, NotificationPersistenceState>>(
+    NOTIFICATION_STATE_STORAGE_KEY,
+    {}
+  );
 
   const userStorageKey = useMemo(() => {
     if (typeof window === "undefined") {
@@ -183,6 +213,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [userStorageKey]
   );
 
+  const pushNotification = useCallback(
+    ({ id, title, message, category = "system", action, timestamp }: CreateNotificationPayload) => {
+      const notificationId = id ?? generateNotificationId();
+      const entry: DashboardNotification = {
+        id: notificationId,
+        title,
+        message,
+        category,
+        action,
+        timestamp: timestamp ?? new Date().toISOString(),
+        read: false,
+        source: "manual",
+      };
+
+      const cleaned = manualNotifications.filter((item) => item.id !== notificationId);
+      setManualNotifications([...cleaned, entry]);
+      setNotificationState({
+        ...notificationState,
+        [notificationId]: { read: false, hidden: false },
+      });
+
+      return notificationId;
+    },
+    [manualNotifications, notificationState, setManualNotifications, setNotificationState]
+  );
+
   const syncNow = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (status !== "authenticated") {
@@ -209,14 +265,26 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         setLastSync(timestamp);
         persistData({ events: nextEvents, taskLists: nextTaskLists, lastSync: timestamp });
         setSyncError(null);
+        if (!silent) {
+          pushNotification({
+            title: "Synchronisation réussie",
+            message: "Vos évènements et tâches sont à jour.",
+            category: "system",
+          });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Synchronisation impossible";
         setSyncError(message);
+        pushNotification({
+          title: "Erreur de synchronisation",
+          message,
+          category: "system",
+        });
       } finally {
         setSyncing(false);
       }
     },
-    [persistData, status]
+    [persistData, pushNotification, status]
   );
 
   useEffect(() => {
@@ -259,24 +327,42 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const entry: FamilyMember = { ...member, id: crypto.randomUUID() };
       const next = [...family, entry];
       setFamily(next);
+      pushNotification({
+        title: "Nouveau membre ajouté",
+        message: `${member.displayName} a rejoint votre espace familial.`,
+        category: "system",
+      });
     },
-    [family, setFamily]
+    [family, pushNotification, setFamily]
   );
 
   const removeFamilyMember = useCallback(
     (id: string) => {
+      const removed = family.find((member) => member.id === id);
       const next = family.filter((member) => member.id !== id);
       setFamily(next);
+      if (removed) {
+        pushNotification({
+          title: "Membre retiré",
+          message: `${removed.displayName} ne fait plus partie de la famille.`,
+          category: "system",
+        });
+      }
     },
-    [family, setFamily]
+    [family, pushNotification, setFamily]
   );
 
   const saveFamilyMember = useCallback(
     (member: FamilyMember) => {
       const next = family.map((item) => (item.id === member.id ? member : item));
       setFamily(next);
+      pushNotification({
+        title: "Profil mis à jour",
+        message: `${member.displayName} a été mis à jour.`,
+        category: "system",
+      });
     },
-    [family, setFamily]
+    [family, pushNotification, setFamily]
   );
 
   const toggleTaskStatus = useCallback(
@@ -298,13 +384,28 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           persistData({ events, taskLists: next, lastSync });
           return next;
         });
+        if (task.status === "completed") {
+          pushNotification({
+            title: "Tâche terminée",
+            message: `Bravo ! "${task.title}" est terminée.`,
+            category: "task",
+            action: { label: "Voir les tâches", href: "/tasks" },
+          });
+        } else {
+          pushNotification({
+            title: "Tâche réactivée",
+            message: `La tâche "${task.title}" est de nouveau active.`,
+            category: "task",
+            action: { label: "Voir les tâches", href: "/tasks" },
+          });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Impossible de mettre à jour la tâche";
         setSyncError(message);
         throw error;
       }
     },
-    [events, lastSync, persistData]
+    [events, lastSync, persistData, pushNotification]
   );
 
   const createTask = useCallback(
@@ -341,13 +442,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           persistData({ events, taskLists: next, lastSync });
           return next;
         });
+        pushNotification({
+          title: "Nouvelle tâche",
+          message: `La tâche "${task.title}" a été ajoutée à votre liste.`,
+          category: "task",
+          action: { label: "Voir mes tâches", href: "/tasks" },
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Impossible de créer la tâche";
         setSyncError(message);
         throw error;
       }
     },
-    [events, lastSync, persistData]
+    [events, lastSync, persistData, pushNotification]
   );
 
   const createEvent = useCallback(
@@ -410,20 +517,26 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             const payload = await response.json().catch(() => null);
             throw new Error(payload?.message ?? "Impossible de créer l'évènement");
           }
-          const { event } = (await response.json()) as { event: FormattedCalendarEvent };
-          setEvents((current) => {
-            const next = [event, ...current].sort(
-              (a, b) =>
-                new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime()
-            );
-            persistData({ events: next, taskLists, lastSync });
-            return next;
-          });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Impossible de créer l'évènement";
-          setSyncError(message);
-          throw error;
-        }
+        const { event } = (await response.json()) as { event: FormattedCalendarEvent };
+        setEvents((current) => {
+          const next = [event, ...current].sort(
+            (a, b) =>
+              new Date(a.start.iso ?? 0).getTime() - new Date(b.start.iso ?? 0).getTime()
+          );
+          persistData({ events: next, taskLists, lastSync });
+          return next;
+        });
+        pushNotification({
+          title: "Évènement créé",
+          message: `"${event.summary}" est planifié (${event.start.label}).`,
+          category: "event",
+          action: { label: "Voir le calendrier", href: "/calendar" },
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Impossible de créer l'évènement";
+        setSyncError(message);
+        throw error;
+      }
         return;
       }
 
@@ -459,14 +572,116 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           persistData({ events: next, taskLists, lastSync });
           return next;
         });
+        pushNotification({
+          title: "Évènement créé",
+          message: `"${event.summary}" est planifié (${event.start.label}).`,
+          category: "event",
+          action: { label: "Voir le calendrier", href: "/calendar" },
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Impossible de créer l'évènement";
         setSyncError(message);
         throw error;
       }
     },
-    [lastSync, persistData, taskLists]
+    [lastSync, persistData, pushNotification, taskLists]
   );
+
+  const derivedNotifications = useMemo(
+    () => deriveNotificationsFromData(events, taskLists),
+    [events, taskLists]
+  );
+
+  const notifications = useMemo(() => {
+    const combined: DashboardNotification[] = [...derivedNotifications, ...manualNotifications];
+    const visible = combined.filter((notification) => !notificationState[notification.id]?.hidden);
+    const resolved = visible.map((notification) => ({
+      ...notification,
+      read: notificationState[notification.id]?.read ?? notification.read ?? false,
+    }));
+    return resolved.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }, [derivedNotifications, manualNotifications, notificationState]);
+
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.read).length,
+    [notifications]
+  );
+
+  const markNotificationRead = useCallback(
+    (id: string) => {
+      const current = notificationState[id] ?? { read: false };
+      if (current.read) {
+        return;
+      }
+      setNotificationState({ ...notificationState, [id]: { ...current, read: true } });
+    },
+    [notificationState, setNotificationState]
+  );
+
+  const markAllNotificationsRead = useCallback(() => {
+    if (!notifications.length) {
+      return;
+    }
+    const next = { ...notificationState } as Record<string, NotificationPersistenceState>;
+    let changed = false;
+    notifications.forEach((notification) => {
+      const current = next[notification.id] ?? { read: false };
+      if (!current.read) {
+        next[notification.id] = { ...current, read: true };
+        changed = true;
+      }
+    });
+    if (changed) {
+      setNotificationState(next);
+    }
+  }, [notificationState, notifications, setNotificationState]);
+
+  const dismissNotification = useCallback(
+    (id: string) => {
+      if (manualNotifications.some((item) => item.id === id)) {
+        const remaining = manualNotifications.filter((item) => item.id !== id);
+        setManualNotifications(remaining);
+        const nextState = { ...notificationState } as Record<string, NotificationPersistenceState>;
+        delete nextState[id];
+        setNotificationState(nextState);
+        return;
+      }
+      const current = notificationState[id] ?? { read: true };
+      setNotificationState({
+        ...notificationState,
+        [id]: { ...current, read: true, hidden: true },
+      });
+    },
+    [manualNotifications, notificationState, setManualNotifications, setNotificationState]
+  );
+
+  const clearNotifications = useCallback(() => {
+    if (!notifications.length) {
+      if (manualNotifications.length) {
+        setManualNotifications([]);
+      }
+      setNotificationState({});
+      return;
+    }
+
+    const nextState: Record<string, NotificationPersistenceState> = { ...notificationState };
+    manualNotifications.forEach((notification) => {
+      delete nextState[notification.id];
+    });
+    notifications.forEach((notification) => {
+      if (notification.source === "auto") {
+        nextState[notification.id] = {
+          ...(nextState[notification.id] ?? {}),
+          read: true,
+          hidden: true,
+        };
+      }
+    });
+    setManualNotifications([]);
+    setNotificationState(nextState);
+  }, [manualNotifications, notificationState, notifications, setManualNotifications, setNotificationState]);
 
   useEffect(() => {
     const accent = ACCENT_MAP[settings.accent];
@@ -528,6 +743,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       createTask,
       createEvent,
       toggleTaskStatus,
+      notifications,
+      unreadNotifications,
+      pushNotification,
+      markNotificationRead,
+      markAllNotificationsRead,
+      dismissNotification,
+      clearNotifications,
     }),
     [
       status,
@@ -548,6 +770,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       createTask,
       createEvent,
       toggleTaskStatus,
+      notifications,
+      unreadNotifications,
+      pushNotification,
+      markNotificationRead,
+      markAllNotificationsRead,
+      dismissNotification,
+      clearNotifications,
     ]
   );
 
