@@ -14,8 +14,10 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   UserCircleIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/dashboard-context";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import styles from "./app-shell.module.css";
 
 type IconComponent = typeof CheckCircleIcon;
@@ -154,6 +156,12 @@ function ShellContent({ children }: { children: ReactNode }) {
     syncError,
     events,
     taskLists,
+    notifications,
+    unreadNotifications,
+    markAllNotificationsRead,
+    markNotificationRead,
+    dismissNotification,
+    clearNotifications,
   } = useDashboard();
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -164,6 +172,9 @@ function ShellContent({ children }: { children: ReactNode }) {
   const [desktopCreateOpen, setDesktopCreateOpen] = useState(false);
   const [mobileCreateOpen, setMobileCreateOpen] = useState(false);
   const desktopCreateRef = useRef<HTMLDivElement | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const notificationsPopoverRef = useRef<HTMLDivElement | null>(null);
 
   const active = useMemo(() => pathname?.replace(/\/$/, "") || "/calendar", [pathname]);
 
@@ -171,6 +182,7 @@ function ShellContent({ children }: { children: ReactNode }) {
     setProfileOpen(false);
     setDesktopCreateOpen(false);
     setMobileCreateOpen(false);
+    setNotificationsOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -185,6 +197,40 @@ function ShellContent({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [profileOpen]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    const closeOnClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (notificationsPopoverRef.current?.contains(target)) {
+        return;
+      }
+      if (notificationsButtonRef.current?.contains(target)) {
+        return;
+      }
+      setNotificationsOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNotificationsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnClick);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnClick);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [notificationsOpen]);
+
+  useEffect(() => {
+    if (!notificationsOpen) {
+      return;
+    }
+    markAllNotificationsRead();
+  }, [markAllNotificationsRead, notificationsOpen]);
 
   useEffect(() => {
     if (!profileOpen) {
@@ -243,7 +289,7 @@ function ShellContent({ children }: { children: ReactNode }) {
       items.push({
         id: `event:${event.id}`,
         label: event.summary ?? "Sans titre",
-        description: event.location ?? event.calendar ?? undefined,
+        description: event.location ?? event.organizer ?? undefined,
         dateKey: key,
         type: "event",
       });
@@ -438,6 +484,45 @@ function ShellContent({ children }: { children: ReactNode }) {
               </div>
             </div>
           ) : null}
+          <div className={styles.notificationsWrapper}>
+            <button
+              type="button"
+              className={styles.notificationButton}
+              ref={notificationsButtonRef}
+              onClick={() => setNotificationsOpen((value) => !value)}
+              aria-expanded={notificationsOpen}
+              aria-haspopup="dialog"
+              aria-label={notificationsOpen ? "Fermer les notifications" : "Afficher les notifications"}
+              data-open={notificationsOpen || undefined}
+              data-has-unread={unreadNotifications > 0 || undefined}
+            >
+              <BellIcon aria-hidden="true" />
+              {unreadNotifications > 0 ? (
+                <span className={styles.notificationBadge}>
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              ) : null}
+            </button>
+            <div
+              ref={notificationsPopoverRef}
+              className={notificationsOpen ? styles.notificationsPopoverOpen : styles.notificationsPopover}
+              role="dialog"
+              aria-label="Centre de notifications"
+            >
+              <NotificationCenter
+                notifications={notifications}
+                onDismiss={(id) => dismissNotification(id)}
+                onClearAll={() => {
+                  clearNotifications();
+                  setNotificationsOpen(false);
+                }}
+                onNavigate={(id) => {
+                  markNotificationRead(id);
+                  setNotificationsOpen(false);
+                }}
+              />
+            </div>
+          </div>
           <button
             type="button"
             className={styles.profileButton}

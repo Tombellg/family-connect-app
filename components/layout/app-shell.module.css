@@ -31,7 +31,8 @@
 .menuButton,
 .createButton,
 .todayButton,
-.searchButton {
+.searchButton,
+.notificationButton {
   width: 40px;
   height: 40px;
   border-radius: 14px;
@@ -48,10 +49,12 @@
 .createButton:hover,
 .todayButton:hover,
 .searchButton:hover,
+.notificationButton:hover,
 .menuButton:focus-visible,
 .createButton:focus-visible,
 .todayButton:focus-visible,
-.searchButton:focus-visible {
+.searchButton:focus-visible,
+.notificationButton:focus-visible {
   border-color: rgba(56, 189, 248, 0.55);
   color: var(--text-primary);
   background: color-mix(in srgb, var(--surface) 60%, var(--accent-soft));
@@ -77,9 +80,42 @@
 .menuButton svg,
 .createButton svg,
 .todayButton svg,
-.searchButton svg {
+.searchButton svg,
+.notificationButton svg {
   width: 20px;
   height: 20px;
+}
+
+.notificationButton {
+  position: relative;
+}
+
+.notificationButton[data-open] {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: color-mix(in srgb, var(--surface) 50%, var(--accent-soft));
+  color: var(--text-primary);
+}
+
+.notificationButton[data-has-unread] {
+  border-color: rgba(56, 189, 248, 0.75);
+  color: var(--text-primary);
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
 }
 
 .topbarBrand {
@@ -163,6 +199,34 @@
   justify-content: flex-end;
   gap: 10px;
   position: relative;
+}
+
+.notificationsWrapper {
+  position: relative;
+}
+
+.notificationsPopover,
+.notificationsPopoverOpen {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  border-radius: 20px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-elevated);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  transform: translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 46;
+  padding: 16px;
+}
+
+.notificationsPopoverOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .createPopover,
