@@ -20,7 +20,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: rgba(18, 18, 24, 0.96);
+  background: var(--surface-strong);
+  border-right: 1px solid var(--surface-border);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
   transform: translateX(-110%);
   transition: transform 0.28s ease;
@@ -32,14 +33,6 @@
 .panel[data-open] {
   transform: translateX(0);
   pointer-events: auto;
-}
-
-.menuBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 12, 16, 0.48);
-  backdrop-filter: blur(2px);
-  z-index: 20;
 }
 
 .panelSection {
@@ -117,7 +110,7 @@
   border: none;
   border-radius: 8px;
   padding: 6px 0;
-  background: rgba(30, 30, 38, 0.7);
+  background: color-mix(in srgb, var(--fc-surface) 80%, transparent);
   color: var(--text-muted);
   font-size: 0.68rem;
   cursor: pointer;
@@ -125,7 +118,7 @@
 }
 
 .miniDay:hover {
-  background: rgba(56, 189, 248, 0.18);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--text-primary);
 }
 
@@ -156,7 +149,7 @@
   padding: 8px 10px;
   border: none;
   border-radius: 12px;
-  background: rgba(30, 30, 38, 0.7);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
   color: var(--text-muted);
   font-size: 0.78rem;
   cursor: pointer;
@@ -193,7 +186,7 @@
   flex-direction: column;
   min-height: 0;
   gap: 16px;
-  padding: 10px;
+  padding: 8px 10px 12px;
 }
 
 .toolbar {
@@ -213,9 +206,9 @@
 .menuToggle {
   width: 38px;
   height: 38px;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.45);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
   color: var(--text-muted);
   display: grid;
   place-items: center;
@@ -224,7 +217,7 @@
 }
 
 .menuToggle:hover {
-  background: rgba(56, 189, 248, 0.2);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--text-primary);
 }
 
@@ -243,9 +236,9 @@
 .monthControls button {
   width: 32px;
   height: 32px;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.45);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
   color: var(--text-muted);
   display: grid;
   place-items: center;
@@ -254,7 +247,7 @@
 }
 
 .monthControls button:hover {
-  background: rgba(56, 189, 248, 0.18);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--text-primary);
 }
 
@@ -298,7 +291,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: 12px;
-  background: rgba(30, 30, 38, 0.7);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
   overflow: hidden;
 }
 
@@ -315,7 +308,7 @@
 
 .viewSwitch button[data-active],
 .viewSwitch button:hover {
-  background: rgba(56, 189, 248, 0.2);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
   color: var(--text-primary);
 }
 
@@ -324,32 +317,6 @@
   height: 16px;
 }
 
-.pillNav {
-  display: inline-flex;
-  border-radius: 999px;
-  background: rgba(30, 30, 38, 0.8);
-  overflow: hidden;
-}
-
-.pillNav a {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  color: var(--text-muted);
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.pillNav a[data-active],
-.pillNav a:hover {
-  background: rgba(56, 189, 248, 0.24);
-  color: var(--text-primary);
-}
-
-.pillNav svg {
-  width: 20px;
-  height: 20px;
-}
 
 .monthLayout {
   display: flex;
@@ -364,10 +331,13 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  background: #131314;
+  background: var(--fc-surface);
   border-radius: 18px;
   padding: 0;
   overflow: hidden;
+  border: 1px solid var(--surface-border);
+  touch-action: pan-y;
+  will-change: transform;
 }
 
 .weekdayHeader {
@@ -410,7 +380,7 @@
 }
 
 .dayButton:hover {
-  background: rgba(40, 40, 50, 0.95);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .dayMuted {
@@ -418,7 +388,7 @@
 }
 
 .daySelected {
-  background: rgba(45, 55, 75, 0.95);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .dayToday {
@@ -673,11 +643,17 @@
 
 .agendaView {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  display: flex;
+  justify-content: center;
   overflow: auto;
-  padding: 4px;
+  padding: 8px 4px 16px;
+}
+
+.agendaInner {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
 }
 
 .agendaSection {
@@ -718,7 +694,7 @@
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 0.65rem;
-  background: rgba(30, 30, 38, 0.7);
+  background: color-mix(in srgb, var(--fc-surface) 85%, transparent);
   color: var(--text-subtle);
 }
 
@@ -747,7 +723,7 @@
 
 @media (max-width: 768px) {
   .workspace {
-    padding: 6px;
+    padding: 6px 0;
     gap: 12px;
   }
 
@@ -764,17 +740,14 @@
     justify-content: space-between;
   }
 
-  .pillNav a {
-    width: 38px;
-    height: 38px;
-  }
-
   .monthLayout {
     gap: 12px;
   }
 
   .gridWrapper {
-    border-radius: 14px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 
   .dayPane {
@@ -782,6 +755,10 @@
   }
 
   .agendaView {
-    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 0;
+  }
+
+  .agendaInner {
+    width: min(90vw, 540px);
   }
 }
