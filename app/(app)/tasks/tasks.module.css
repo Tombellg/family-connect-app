@@ -20,7 +20,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: color-mix(in srgb, rgba(12, 18, 35, 0.82) 80%, rgba(59, 130, 246, 0.08));
+  background: color-mix(in srgb, rgba(12, 18, 35, 0.82) 84%, var(--accent) 12%);
   border-right: 1px solid rgba(148, 163, 184, 0.12);
   box-shadow: var(--card-shadow);
   backdrop-filter: var(--glass-blur);
@@ -179,7 +179,7 @@
   gap: 12px;
   width: 100%;
   border-radius: 16px;
-  border: 1px dashed rgba(96, 165, 250, 0.35);
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
   background: rgba(15, 23, 42, 0.5);
   color: color-mix(in srgb, var(--text-muted) 75%, rgba(255, 255, 255, 0.75));
   font-size: 0.86rem;
@@ -196,11 +196,11 @@
 }
 
 .addTrigger:hover {
-  border-color: rgba(96, 165, 250, 0.55);
-  background: rgba(37, 99, 235, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
   color: var(--text-primary);
   transform: translateY(-2px);
-  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 18px 32px color-mix(in srgb, var(--accent) 28%, rgba(8, 12, 24, 0.1));
 }
 
 .addForm {
@@ -260,14 +260,14 @@
 .toggleButton:hover {
   color: var(--accent-strong);
   transform: translateY(-2px);
-  border-color: rgba(96, 165, 250, 0.32);
-  background: rgba(59, 130, 246, 0.18);
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .toggleButtonActive {
   color: var(--accent-strong);
-  border-color: rgba(96, 165, 250, 0.38);
-  background: rgba(59, 130, 246, 0.25);
+  border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .addSubmit,
@@ -362,8 +362,8 @@
 .quickActionActive {
   color: var(--accent);
   transform: translateY(-2px);
-  border-color: rgba(96, 165, 250, 0.28);
-  background: rgba(59, 130, 246, 0.18);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .dueLabel {
@@ -534,7 +534,7 @@
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(96, 165, 250, 0.22);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   color: var(--text-primary);
 }
 
@@ -544,7 +544,7 @@
   gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(129, 140, 248, 0.22);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
   font-size: 0.7rem;
   text-transform: none;
 }
