@@ -16,13 +16,14 @@
   bottom: 0;
   left: 0;
   width: clamp(240px, 28vw, 320px);
-  padding: 16px 18px;
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: transparent;
-  border-right: none;
-  box-shadow: none;
+  background: color-mix(in srgb, rgba(12, 18, 35, 0.82) 80%, rgba(59, 130, 246, 0.08));
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: var(--glass-blur);
   transform: translateX(-110%);
   transition: transform 0.28s ease;
   overflow-y: auto;
@@ -38,7 +39,12 @@
 .panelSection {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 18px 34px rgba(6, 10, 20, 0.45);
 }
 
 .panelSection header {
@@ -113,23 +119,26 @@
   flex: 1;
   display: flex;
   justify-content: flex-start;
-  padding: 18px clamp(18px, 6vw, 38px);
+  padding: 24px clamp(24px, 6vw, 46px);
   overflow: auto;
+  position: relative;
 }
 
 .listCard {
-  width: min(720px, 100%);
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
+  width: min(760px, 100%);
+  background: rgba(12, 18, 35, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 26px;
+  box-shadow: 0 34px 64px rgba(6, 10, 20, 0.55);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  backdrop-filter: var(--glass-blur);
+  padding: 22px clamp(18px, 5vw, 32px);
 }
 
 .listHeader {
-  padding: 12px 0 18px;
+  padding: 0 0 18px;
 }
 
 .listTitle {
@@ -139,13 +148,13 @@
 }
 
 .listTitle span {
-  font-size: 1.05rem;
+  font-size: 1.14rem;
   font-weight: 600;
 }
 
 .listTitle small {
-  font-size: 0.78rem;
-  color: var(--text-subtle);
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--text-subtle) 70%, rgba(255, 255, 255, 0.75));
 }
 
 .taskList {
@@ -154,6 +163,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .addRow {
@@ -168,14 +178,15 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  border-radius: 12px;
-  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
-  background: transparent;
-  color: var(--text-muted);
+  border-radius: 16px;
+  border: 1px dashed rgba(96, 165, 250, 0.35);
+  background: rgba(15, 23, 42, 0.5);
+  color: color-mix(in srgb, var(--text-muted) 75%, rgba(255, 255, 255, 0.75));
   font-size: 0.86rem;
-  padding: 12px;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .addTrigger svg {
@@ -185,9 +196,11 @@
 }
 
 .addTrigger:hover {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(37, 99, 235, 0.22);
   color: var(--text-primary);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.35);
 }
 
 .addForm {
@@ -210,12 +223,13 @@
 }
 
 .addInput {
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
   color: inherit;
   font-size: 0.95rem;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px rgba(7, 11, 20, 0.35);
 }
 
 .addInput::placeholder {
@@ -224,16 +238,17 @@
 
 .toggleButton,
 .toggleButtonActive {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.45);
   color: var(--text-subtle);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 12px 24px rgba(7, 11, 20, 0.35);
 }
 
 .toggleButton svg,
@@ -244,11 +259,15 @@
 
 .toggleButton:hover {
   color: var(--accent-strong);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgba(96, 165, 250, 0.32);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .toggleButtonActive {
   color: var(--accent-strong);
+  border-color: rgba(96, 165, 250, 0.38);
+  background: rgba(59, 130, 246, 0.25);
 }
 
 .addSubmit,
@@ -274,21 +293,24 @@
 }
 
 .addCancel {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.45);
   color: var(--text-subtle);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 12px 24px rgba(7, 11, 20, 0.32);
 }
 
 .addCancel:hover {
   color: #fecaca;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.12);
 }
 
 .notesField {
@@ -300,13 +322,14 @@
 }
 
 .notesField textarea {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  background: transparent;
-  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.55);
+  padding: 12px 14px;
   color: inherit;
   min-height: 72px;
   resize: vertical;
+  box-shadow: inset 0 0 0 1px rgba(7, 11, 20, 0.35);
 }
 
 .quickActions {
@@ -318,16 +341,16 @@
 }
 
 .quickActions button {
-  border: none;
-  border-radius: 10px;
-  padding: 6px 10px;
-  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.45);
   color: var(--text-subtle);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .quickActions button svg {
@@ -338,7 +361,9 @@
 .quickActions button:hover,
 .quickActionActive {
   color: var(--accent);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgba(96, 165, 250, 0.28);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .dueLabel {
@@ -462,14 +487,18 @@
 }
 
 .taskRow {
-  padding: 12px 0 10px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.55);
+  box-shadow: 0 18px 34px rgba(6, 10, 20, 0.45);
 }
 
 .taskLabel {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  color: var(--text-muted);
+  color: color-mix(in srgb, var(--text-muted) 75%, rgba(255, 255, 255, 0.8));
 }
 
 .taskLabel input {
@@ -482,13 +511,13 @@
 
 .taskLabel strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.96rem;
   color: var(--text-primary);
 }
 
 .taskLabel p {
   margin: 4px 0;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
@@ -497,24 +526,25 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: 0.72rem;
-  color: var(--text-subtle);
+  color: color-mix(in srgb, var(--text-subtle) 70%, rgba(255, 255, 255, 0.75));
 }
 
 .dueChip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(96, 165, 250, 0.22);
+  color: var(--text-primary);
 }
 
 .recurrenceBadge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(129, 140, 248, 0.22);
   font-size: 0.7rem;
   text-transform: none;
 }
@@ -586,18 +616,17 @@
 
 @media (max-width: 768px) {
   .workspace {
-    padding: 10px 12px 84px;
+    padding: 18px 16px 96px;
   }
 
   .listCard {
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
     width: 100%;
+    border-radius: 22px;
+    padding: 20px 18px;
   }
 
   .panel {
-    width: min(320px, 80vw);
+    width: min(320px, 82vw);
   }
 }
 
