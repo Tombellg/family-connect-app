@@ -3,9 +3,11 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--fc-background);
+  background: transparent;
   color: var(--text-primary);
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
 }
 
 .topbar {
@@ -15,9 +17,21 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px clamp(18px, 5vw, 28px);
-  background: var(--fc-background);
+  padding: 16px clamp(18px, 5vw, 30px) 14px;
+  background: color-mix(in srgb, var(--fc-background) 65%, rgba(12, 18, 35, 0.72));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 16px 38px rgba(7, 11, 20, 0.45);
+  backdrop-filter: var(--glass-blur);
   width: 100%;
+}
+
+.topbar::after {
+  content: "";
+  position: absolute;
+  inset: auto 18px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.45), transparent);
+  opacity: 0.8;
 }
 
 .topbarLeft {
@@ -32,16 +46,17 @@
 .todayButton,
 .searchButton,
 .notificationButton {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  color: var(--text-subtle);
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: color-mix(in srgb, var(--fc-background) 55%, rgba(255, 255, 255, 0.05));
+  box-shadow: 0 14px 24px rgba(8, 12, 24, 0.35);
+  color: var(--text-muted);
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: color 0.18s ease, transform 0.18s ease;
+  transition: color 0.18s ease, transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .menuButton:hover,
@@ -55,13 +70,15 @@
 .searchButton:focus-visible,
 .notificationButton:focus-visible {
   color: var(--accent);
-  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.35);
+  background: color-mix(in srgb, var(--fc-background) 45%, rgba(96, 165, 250, 0.12));
+  transform: translateY(-2px);
 }
 
 .todayButton {
   border: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.32), rgba(59, 130, 246, 0.25));
   color: var(--text-primary);
   display: inline-flex;
   align-items: center;
@@ -70,13 +87,14 @@
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.18s ease;
+  transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.35);
 }
 
 .todayButton:hover,
 .todayButton:focus-visible {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.42), rgba(59, 130, 246, 0.32));
+  transform: translateY(-2px);
 }
 
 .todayText {
@@ -105,24 +123,28 @@
 .topbarBrand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: inherit;
   text-decoration: none;
-  padding: 4px 10px;
-  border-radius: 12px;
-  transition: transform 0.2s ease;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.78) 70%, rgba(59, 130, 246, 0.18));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 16px 32px rgba(8, 12, 24, 0.38);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .topbarBrand:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: rgba(96, 165, 250, 0.35);
 }
 
 .brandDot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 999px;
   background: var(--accent-gradient);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.65);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.65);
 }
 
 .brandText {
@@ -148,6 +170,9 @@
   justify-content: center;
   margin-left: clamp(16px, 4vw, 32px);
   margin-right: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.82) 70%, rgba(96, 165, 250, 0.08));
 }
 
 .topbarRight {
@@ -287,21 +312,23 @@
 }
 
 .calendarStepper button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: var(--text-subtle);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.86) 80%, rgba(255, 255, 255, 0.06));
+  color: var(--text-muted);
   display: grid;
   place-items: center;
-  transition: color 0.18s ease, transform 0.18s ease;
+  transition: color 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 10px 22px rgba(8, 12, 24, 0.35);
 }
 
 .calendarStepper button:hover,
 .calendarStepper button:focus-visible {
   color: var(--accent);
-  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.32);
+  transform: translateY(-2px);
 }
 
 .calendarStepper svg {
@@ -320,18 +347,20 @@
   align-items: center;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  gap: 4px;
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.82) 80%, rgba(59, 130, 246, 0.14));
+  gap: 6px;
+  box-shadow: 0 18px 34px rgba(7, 11, 20, 0.4);
+  backdrop-filter: var(--glass-blur);
 }
 
 .appSwitch a {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 8px;
+  padding: 6px 16px;
   border-radius: 999px;
   color: var(--text-subtle);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
 }
 
@@ -340,14 +369,15 @@
 }
 
 .appSwitch a[data-active] {
-  background: rgba(56, 189, 248, 0.28);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.38), rgba(37, 99, 235, 0.32));
   color: var(--text-primary);
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.38);
 }
 
 .appSwitch a:hover,
 .appSwitch a:focus-visible {
   color: var(--accent);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .appSwitch svg {
@@ -367,9 +397,10 @@
   width: max-content;
   min-width: 200px;
   border-radius: 16px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--surface-border);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, var(--surface-elevated) 90%, rgba(59, 130, 246, 0.06));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: var(--glass-blur);
   transform: translateY(-6px);
   opacity: 0;
   pointer-events: none;
@@ -387,22 +418,23 @@
 .createPopoverOpen button {
   border: none;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--fc-surface) 90%, transparent);
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.82) 70%, rgba(59, 130, 246, 0.12));
   color: var(--text-primary);
   font-size: 0.9rem;
   padding: 10px 12px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .createPopover button:hover,
 .createPopoverOpen button:hover,
 .createPopover button:focus-visible,
 .createPopoverOpen button:focus-visible {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.35), rgba(59, 130, 246, 0.25));
   color: var(--text-primary);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(59, 130, 246, 0.28);
 }
 
 .searchPopover {
@@ -410,10 +442,11 @@
   top: calc(100% + 10px);
   right: 0;
   width: min(380px, 90vw);
-  background: var(--surface-elevated);
+  background: color-mix(in srgb, var(--surface-elevated) 90%, rgba(37, 99, 235, 0.08));
   border-radius: 18px;
-  border: 1px solid var(--surface-border);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: var(--glass-blur);
   padding: 14px;
   display: grid;
   gap: 12px;
@@ -494,15 +527,17 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(148, 163, 184, 0.14);
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   display: grid;
   place-items: center;
   color: var(--text-muted);
   overflow: hidden;
+  box-shadow: 0 16px 32px rgba(7, 11, 20, 0.45);
 }
 
 .profileAvatar[data-authenticated] {
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(96, 165, 250, 0.25);
   color: var(--text-primary);
 }
 
@@ -531,9 +566,10 @@
   width: min(320px, calc(100vw - 32px));
   padding: 14px;
   border-radius: 18px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--surface-border);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--surface-elevated) 92%, rgba(129, 140, 248, 0.12));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 30px 56px rgba(7, 11, 20, 0.55);
+  backdrop-filter: var(--glass-blur);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -572,7 +608,7 @@
   padding: 8px 10px;
   border: none;
   border-radius: 12px;
-  background: none;
+  background: rgba(15, 23, 42, 0.25);
   color: var(--text-muted);
   font-size: 0.85rem;
   text-decoration: none;
@@ -583,7 +619,7 @@
 .menuSection a[data-active],
 .menuSection a:hover,
 .menuSection button:hover {
-  background: rgba(56, 189, 248, 0.12);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.28), rgba(37, 99, 235, 0.2));
   color: var(--text-primary);
 }
 
@@ -647,8 +683,22 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 clamp(10px, 2vw, 18px) clamp(12px, 2vw, 22px);
+  padding: clamp(6px, 2vw, 12px) clamp(10px, 3vw, 24px) clamp(16px, 3vw, 28px);
   overflow: hidden;
+  position: relative;
+}
+
+.main::before {
+  content: "";
+  position: absolute;
+  inset: clamp(40px, 7vh, 80px) 0 0;
+  background:
+    radial-gradient(80% 45% at 12% 18%, rgba(96, 165, 250, 0.18), transparent 55%),
+    radial-gradient(70% 50% at 85% 8%, rgba(59, 130, 246, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(6, 11, 23, 0.8), rgba(6, 11, 23, 0.4));
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .oneTapAnchor {
@@ -656,6 +706,12 @@
   top: 14px;
   right: 14px;
   z-index: 45;
+}
+
+@media (min-width: 1100px) {
+  .appSwitch a span {
+    display: inline;
+  }
 }
 
 @media (max-width: 960px) {
