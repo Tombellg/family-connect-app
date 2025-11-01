@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent as ReactTouchEvent } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import type { FormattedTaskList } from "@/lib/google";
 import styles from "./calendar.module.css";
@@ -52,7 +52,6 @@ const WEEKDAY_INDEX: Record<string, number> = {
 const COLOR_POOL = ["#38bdf8", "#818cf8", "#f472b6", "#22d3ee", "#facc15", "#4ade80", "#fb7185"];
 
 const MAX_DAY_PREVIEW = 4;
-const MAX_DAY_DETAILS = 6;
 const MAX_AGENDA_SECTIONS = 8;
 const MAX_AGENDA_ITEMS_PER_DAY = 4;
 
@@ -246,14 +245,24 @@ export default function CalendarPage() {
   });
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(true);
+  const isDesktopViewport = () =>
+    typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+  const [menuOpen, setMenuOpen] = useState(() =>
+    typeof window === "undefined" ? true : isDesktopViewport()
+  );
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === "undefined" ? true : isDesktopViewport()
+  );
   const [composerTarget, setComposerTarget] = useState<string | null>(null);
   const [composerPosition, setComposerPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const composerFormRef = useRef<HTMLFormElement | null>(null);
   const dayRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const selectedDateRef = useRef<Date | null>(selectedDate);
-  const [showDayDetails, setShowDayDetails] = useState(false);
+  const [mobileOverlay, setMobileOverlay] = useState<{
+    key: string;
+    mode: "agenda" | "composer";
+  } | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [swipeTransition, setSwipeTransition] = useState(false);
   const swipeStateRef = useRef<{ startX: number; startY: number; active: boolean } | null>(null);
@@ -355,7 +364,7 @@ export default function CalendarPage() {
             type: "task",
             title: task.title,
             subtitle: list.title,
-            timeLabel: task.recurrence?.length ? "Tâche récurrente" : "Tâche",
+            timeLabel: task.recurrence?.length ? "Récurrente" : null,
             dateKey: key,
             color: paletteBySource.get(sourceId) ?? list.color,
             sourceId,
@@ -422,15 +431,37 @@ export default function CalendarPage() {
   }, [itemsByDay]);
 
   const selectedKey = selectedDate ? formatDateKey(selectedDate) : null;
-  const dayItems = selectedKey ? itemsByDay.get(selectedKey) ?? [] : [];
   const weeks = useMemo(() => buildMonthMatrix(currentMonth), [currentMonth]);
 
   const todayKey = formatDateKey(new Date());
   const monthLabel = currentMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  const dayPreview = dayItems.slice(0, MAX_DAY_DETAILS);
-  const dayOverflow = Math.max(dayItems.length - dayPreview.length, 0);
   const agendaSections = listItems.slice(0, MAX_AGENDA_SECTIONS);
   const composerDate = useMemo(() => selectedDate ?? parseDateKey(eventDraft.date), [eventDraft.date, selectedDate]);
+  const overlayKey = mobileOverlay?.key ?? null;
+  const overlayDate = overlayKey ? parseDateKey(overlayKey) : null;
+  const overlayItems = overlayKey ? itemsByDay.get(overlayKey) ?? [] : [];
+  const overlayLabel = overlayDate ? formatListLabel(overlayDate) : "";
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncMenu = () => {
+      setMenuOpen(media.matches);
+      setIsDesktop(media.matches);
+      if (media.matches) {
+        setMobileOverlay(null);
+      }
+    };
+    syncMenu();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", syncMenu);
+      return () => media.removeEventListener("change", syncMenu);
+    }
+    media.addListener(syncMenu);
+    return () => media.removeListener(syncMenu);
+  }, []);
 
   useEffect(() => {
     window.dispatchEvent(
@@ -467,6 +498,9 @@ export default function CalendarPage() {
       }));
       window.setTimeout(() => {
         setComposerTarget(null);
+        if (!isDesktopViewport()) {
+          setMobileOverlay(null);
+        }
         setFormMessage(null);
       }, 800);
     } catch (error) {
@@ -507,11 +541,29 @@ export default function CalendarPage() {
     const key = formatDateKey(cell.date);
     const sameDay = selectedKey === key;
     setSelectedDate(cell.date);
-    setShowDayDetails((current) => (sameDay ? !current : true));
-    setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
-    setComposerTarget((current) => (current === cell.key ? null : cell.key));
+    setEventDraft((current) => ({ ...current, date: key }));
     setFormMessage(null);
+    if (isDesktopViewport()) {
+      setMobileOverlay(null);
+      setComposerTarget((current) => (current === cell.key && sameDay ? null : cell.key));
+      return;
+    }
+    const items = itemsByDay.get(key) ?? [];
+    setComposerTarget(null);
+    setMobileOverlay((current) => {
+      const targetMode: "agenda" | "composer" = items.length ? "agenda" : "composer";
+      if (sameDay && current?.key === key && current.mode === targetMode) {
+        return null;
+      }
+      return { key, mode: targetMode };
+    });
   };
+
+  const closeMobileOverlay = useCallback(() => {
+    setMobileOverlay(null);
+    setComposerTarget(null);
+    setFormMessage(null);
+  }, []);
 
   useEffect(() => {
     const handleFocusToday: EventListener = () => {
@@ -520,9 +572,7 @@ export default function CalendarPage() {
       setSelectedDate(now);
       setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
       setEventDraft((current) => ({ ...current, date: formatDateKey(now) }));
-      setComposerTarget(null);
-      setFormMessage(null);
-      setShowDayDetails(true);
+      closeMobileOverlay();
       window.setTimeout(() => {
         const button = dayRefs.current.get(formatDateKey(now));
         button?.focus();
@@ -538,9 +588,7 @@ export default function CalendarPage() {
       setSelectedDate(date);
       setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
       setEventDraft((current) => ({ ...current, date: formatDateKey(date) }));
-      setComposerTarget(null);
-      setFormMessage(null);
-      setShowDayDetails(true);
+      closeMobileOverlay();
       window.setTimeout(() => {
         const button = dayRefs.current.get(formatDateKey(date));
         button?.focus();
@@ -554,9 +602,15 @@ export default function CalendarPage() {
       setSelectedDate(normalized);
       setCurrentMonth(new Date(normalized.getFullYear(), normalized.getMonth(), 1));
       setEventDraft((current) => ({ ...current, date: key }));
-      setComposerTarget(key);
-      setMenuOpen(false);
-      setShowDayDetails(true);
+      setFormMessage(null);
+      if (isDesktopViewport()) {
+        setComposerTarget(key);
+        setMobileOverlay(null);
+      } else {
+        setComposerTarget(null);
+        setMobileOverlay({ key, mode: "composer" });
+        setMenuOpen(false);
+      }
     };
 
     window.addEventListener("fc:focus-today", handleFocusToday);
@@ -574,7 +628,12 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const openDrawer = () => setMenuOpen(true);
-    const closeDrawer = () => setMenuOpen(false);
+    const closeDrawer = () => {
+      if (isDesktopViewport()) {
+        return;
+      }
+      setMenuOpen(false);
+    };
     const toggleDrawer = () => setMenuOpen((value) => !value);
     window.addEventListener("fc:open-drawer", openDrawer);
     window.addEventListener("fc:close-drawer", closeDrawer);
@@ -660,7 +719,7 @@ export default function CalendarPage() {
   };
 
   useLayoutEffect(() => {
-    if (!composerTarget) {
+    if (!composerTarget || !isDesktop) {
       setComposerPosition(null);
       return;
     }
@@ -679,8 +738,25 @@ export default function CalendarPage() {
       if (left + width > containerWidth) {
         left = Math.max(0, containerWidth - width - 8);
       }
-      const top = targetRect.bottom - containerRect.top + container.scrollTop + 8;
+      let top = targetRect.bottom - containerRect.top + container.scrollTop + 8;
       setComposerPosition({ top, left, width });
+      window.requestAnimationFrame(() => {
+        const form = composerFormRef.current;
+        const host = gridRef.current;
+        if (!form || !host) {
+          return;
+        }
+        const formHeight = form.offsetHeight;
+        const scrollTop = host.scrollTop;
+        const containerHeight = host.clientHeight;
+        if (top + formHeight > containerHeight + scrollTop - 8) {
+          let adjustedTop = targetRect.top - containerRect.top + scrollTop - formHeight - 8;
+          if (adjustedTop < scrollTop + 8) {
+            adjustedTop = scrollTop + 8;
+          }
+          setComposerPosition({ top: adjustedTop, left, width });
+        }
+      });
     };
     updatePosition();
     window.addEventListener("resize", updatePosition);
@@ -690,7 +766,7 @@ export default function CalendarPage() {
       window.removeEventListener("resize", updatePosition);
       container?.removeEventListener("scroll", updatePosition);
     };
-  }, [composerTarget, menuOpen]);
+  }, [composerTarget, isDesktop, menuOpen]);
 
   useEffect(() => {
     if (!composerTarget) {
@@ -699,8 +775,7 @@ export default function CalendarPage() {
     const close = (event: MouseEvent) => {
       const form = composerFormRef.current;
       if (!form) {
-        setComposerTarget(null);
-        setFormMessage(null);
+        closeMobileOverlay();
         return;
       }
       const targetNode = event.target as Node;
@@ -711,13 +786,11 @@ export default function CalendarPage() {
       if (dayButton?.contains(targetNode)) {
         return;
       }
-      setComposerTarget(null);
-      setFormMessage(null);
+      closeMobileOverlay();
     };
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setComposerTarget(null);
-        setFormMessage(null);
+        closeMobileOverlay();
       }
     };
     document.addEventListener("mousedown", close);
@@ -726,7 +799,7 @@ export default function CalendarPage() {
       document.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [composerTarget]);
+  }, [closeMobileOverlay, composerTarget]);
 
   return (
     <div className={styles.page} data-menu-open={menuOpen || undefined}>
@@ -772,13 +845,27 @@ export default function CalendarPage() {
                       key={cell.key}
                       className={classes}
                       onClick={() => {
+                        const key = formatDateKey(cell.date);
+                        const sameDay = selectedKey === key;
                         setSelectedDate(cell.date);
                         setCurrentMonth(new Date(cell.date.getFullYear(), cell.date.getMonth(), 1));
-                        setEventDraft((current) => ({ ...current, date: formatDateKey(cell.date) }));
-                        setComposerTarget(null);
+                        setEventDraft((current) => ({ ...current, date: key }));
                         setFormMessage(null);
-                        setShowDayDetails(true);
-                        setMenuOpen(false);
+                        if (isDesktopViewport()) {
+                          setMobileOverlay(null);
+                          setComposerTarget((current) => (current === key && sameDay ? null : key));
+                        } else {
+                          const items = itemsByDay.get(key) ?? [];
+                          setComposerTarget(null);
+                          setMobileOverlay((current) => {
+                            const targetMode: "agenda" | "composer" = items.length ? "agenda" : "composer";
+                            if (sameDay && current?.key === key && current.mode === targetMode) {
+                              return null;
+                            }
+                            return { key, mode: targetMode };
+                          });
+                          setMenuOpen(false);
+                        }
                       }}
                     >
                       {cell.date.getDate()}
@@ -797,22 +884,153 @@ export default function CalendarPage() {
             {sources.map((source) => {
               const active = enabledSources.has(source.id);
               return (
-                <button
+                <label
                   key={source.id}
-                  type="button"
-                  className={active ? styles.sourceButtonActive : styles.sourceButton}
-                  onClick={() => toggleSource(source.id)}
-                  aria-pressed={active}
+                  className={active ? styles.sourceOptionActive : styles.sourceOption}
                 >
-                  <span className={styles.sourceDot} style={source.color ? { backgroundColor: source.color } : undefined} />
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={() => toggleSource(source.id)}
+                  />
+                  <span
+                    className={styles.sourceDot}
+                    style={source.color ? { backgroundColor: source.color } : undefined}
+                  />
                   <span className={styles.sourceLabel}>{source.label}</span>
-                </button>
+                </label>
               );
             })}
           </div>
         </div>
       </aside>
       <section className={styles.workspace}>
+        {!isDesktop && mobileOverlay ? (
+          <div className={styles.mobileOverlay} data-mode={mobileOverlay.mode}>
+            <header className={styles.mobileOverlayHeader}>
+              <span>{overlayLabel}</span>
+              <button
+                type="button"
+                onClick={closeMobileOverlay}
+                aria-label="Fermer le panneau du jour"
+              >
+                ×
+              </button>
+            </header>
+            {mobileOverlay.mode === "agenda" ? (
+              <ul className={styles.dayList}>
+                {overlayItems.map((item) => {
+                  const isTask = item.type === "task";
+                  return (
+                    <li key={item.id} className={isTask ? styles.dayTask : undefined}>
+                      <span
+                        className={styles.dayBadge}
+                        style={item.color ? { backgroundColor: item.color } : undefined}
+                      />
+                      <div>
+                        <strong>{item.title}</strong>
+                        {isTask ? (
+                          <div className={styles.dayTaskMeta}>
+                            <CheckCircleIcon aria-hidden="true" />
+                            {item.timeLabel ? <span>{item.timeLabel}</span> : null}
+                          </div>
+                        ) : item.timeLabel ? (
+                          <span>{item.timeLabel}</span>
+                        ) : null}
+                        {item.subtitle ? <small>{item.subtitle}</small> : null}
+                      </div>
+                    </li>
+                  );
+                })}
+                {!overlayItems.length ? <li className={styles.empty}>Aucun élément ce jour-là.</li> : null}
+              </ul>
+            ) : (
+              <form className={styles.mobileComposer} onSubmit={handleCreateEvent}>
+                <span className={styles.mobileComposerTitle}>Nouvel évènement</span>
+                <label className={styles.inlineField}>
+                  <span>Titre</span>
+                  <input
+                    type="text"
+                    value={eventDraft.summary}
+                    onChange={(event) =>
+                      setEventDraft((current) => ({ ...current, summary: event.target.value }))
+                    }
+                    required
+                  />
+                </label>
+                <div className={styles.inlineMeta}>
+                  <span>{formatListLabel(composerDate)}</span>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={eventDraft.allDay}
+                      onChange={(event) =>
+                        setEventDraft((current) => ({ ...current, allDay: event.target.checked }))
+                      }
+                    />
+                    <span>Toute la journée</span>
+                  </label>
+                </div>
+                {!eventDraft.allDay ? (
+                  <div className={styles.inlineTimes}>
+                    <label>
+                      <span>Début</span>
+                      <input
+                        type="time"
+                        value={eventDraft.startTime}
+                        onChange={(event) =>
+                          setEventDraft((current) => ({ ...current, startTime: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>Fin</span>
+                      <input
+                        type="time"
+                        value={eventDraft.endTime}
+                        onChange={(event) =>
+                          setEventDraft((current) => ({ ...current, endTime: event.target.value }))
+                        }
+                        required
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                <label className={styles.inlineField}>
+                  <span>Lieu</span>
+                  <input
+                    type="text"
+                    value={eventDraft.location}
+                    onChange={(event) =>
+                      setEventDraft((current) => ({ ...current, location: event.target.value }))
+                    }
+                    placeholder="Lieu"
+                  />
+                </label>
+                <label className={styles.inlineField}>
+                  <span>Notes</span>
+                  <textarea
+                    value={eventDraft.description}
+                    onChange={(event) =>
+                      setEventDraft((current) => ({ ...current, description: event.target.value }))
+                    }
+                    placeholder="Notes"
+                  />
+                </label>
+                {formMessage ? <p className={styles.inlineMessage}>{formMessage}</p> : null}
+                <div className={styles.inlineActions}>
+                  <button type="submit" disabled={creatingEvent}>
+                    {creatingEvent ? "Ajout…" : "Enregistrer"}
+                  </button>
+                  <button type="button" onClick={closeMobileOverlay}>
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : null}
         {viewMode === "month" ? (
           <div className={styles.monthLayout}>
             <div
@@ -866,9 +1084,20 @@ export default function CalendarPage() {
                           <div className={styles.eventList}>
                             {preview.map((item) => {
                               const style = item.color ? { backgroundColor: `${item.color}22` } : undefined;
+                              const isTask = item.type === "task";
+                              const chipClass = [styles.eventChip, isTask ? styles.taskChip : ""]
+                                .filter(Boolean)
+                                .join(" ");
                               return (
-                                <span key={item.id} className={styles.eventChip} style={style}>
-                                  {item.timeLabel ? <small>{item.timeLabel}</small> : null}
+                                <span key={item.id} className={chipClass} style={style}>
+                                  {isTask ? (
+                                    <span className={styles.taskMeta}>
+                                      <CheckCircleIcon aria-hidden="true" />
+                                      {item.timeLabel ? <span>{item.timeLabel}</span> : null}
+                                    </span>
+                                  ) : item.timeLabel ? (
+                                    <small>{item.timeLabel}</small>
+                                  ) : null}
                                   <span>{item.title}</span>
                                 </span>
                               );
@@ -881,7 +1110,7 @@ export default function CalendarPage() {
                   </div>
                 ))}
               </div>
-              {composerTarget && composerPosition ? (
+              {composerTarget && composerPosition && isDesktop ? (
                 <form
                   ref={composerFormRef}
                   className={styles.inlineComposer}
@@ -896,10 +1125,7 @@ export default function CalendarPage() {
                     <span>Nouvel évènement</span>
                     <button
                       type="button"
-                      onClick={() => {
-                        setComposerTarget(null);
-                        setFormMessage(null);
-                      }}
+                      onClick={closeMobileOverlay}
                       aria-label="Fermer l'éditeur"
                     >
                       ×
@@ -969,38 +1195,13 @@ export default function CalendarPage() {
                     <button type="submit" disabled={creatingEvent}>
                       {creatingEvent ? "Ajout…" : "Enregistrer"}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setComposerTarget(null);
-                        setFormMessage(null);
-                      }}
-                    >
+                    <button type="button" onClick={closeMobileOverlay}>
                       Annuler
                     </button>
                   </div>
                 </form>
               ) : null}
             </div>
-            {showDayDetails && selectedDate ? (
-              <aside className={styles.dayPane}>
-                <h3>{formatListLabel(selectedDate)}</h3>
-                <ul className={styles.dayList}>
-                  {dayPreview.map((item) => (
-                    <li key={item.id}>
-                      <span className={styles.dayBadge} style={item.color ? { backgroundColor: item.color } : undefined} />
-                      <div>
-                        <strong>{item.title}</strong>
-                        {item.timeLabel ? <span>{item.timeLabel}</span> : null}
-                        {item.subtitle ? <small>{item.subtitle}</small> : null}
-                      </div>
-                    </li>
-                  ))}
-                  {dayOverflow > 0 ? <li className={styles.dayMore}>+{dayOverflow} autres</li> : null}
-                  {!dayItems.length ? <li className={styles.empty}>Aucun élément ce jour-là.</li> : null}
-                </ul>
-              </aside>
-            ) : null}
           </div>
         ) : (
           <div className={styles.agendaView}>

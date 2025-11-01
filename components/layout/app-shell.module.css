@@ -12,12 +12,12 @@
   position: relative;
   z-index: 40;
   flex-shrink: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px clamp(18px, 5vw, 28px);
   background: var(--fc-background);
+  width: 100%;
 }
 
 .topbarLeft {
@@ -59,54 +59,47 @@
 }
 
 .todayButton {
-  font-size: 0.72rem;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.18s ease;
+}
+
+.todayButton:hover,
+.todayButton:focus-visible {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.todayText {
+  display: inline-block;
 }
 
 .todayBadge {
-  display: inline-grid;
+  display: none;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
   border: 1px solid currentColor;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
 }
 
 .menuButton svg,
 .createButton svg,
 .todayButton svg,
-.searchButton svg,
-.notificationButton svg {
+.searchButton svg {
   width: 20px;
   height: 20px;
-}
-
-.notificationButton {
-  position: relative;
-}
-
-.notificationButton[data-open],
-.notificationButton[data-has-unread] {
-  color: var(--accent);
-}
-
-.notificationBadge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: white;
-  font-size: 0.68rem;
-  font-weight: 600;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
 }
 
 .topbarBrand {
@@ -151,30 +144,145 @@
 
 .topbarCenter {
   display: flex;
+  align-items: center;
   justify-content: center;
+  margin-left: clamp(16px, 4vw, 32px);
+  margin-right: auto;
 }
 
 .topbarRight {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 10px;
   position: relative;
+  margin-left: auto;
 }
+
+.mobileTitle {
+  display: none;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+
+.viewMenu,
+.viewMenuOpen {
+  position: relative;
+  display: inline-flex;
+}
+
+.viewTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text-primary);
+  padding: 6px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.18s ease;
+}
+
+.viewTrigger:hover,
+.viewTrigger:focus-visible {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.viewMenuOpen .viewTrigger {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.viewMenu > div,
+.viewMenuOpen > div {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 160px;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 44;
+}
+
+.viewMenuOpen > div {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.viewMenu button,
+.viewMenuOpen button {
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.viewMenu button:hover,
+.viewMenuOpen button:hover,
+.viewMenu button:focus-visible,
+.viewMenuOpen button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--text-primary);
+}
+
+.viewMenu svg,
+.viewMenuOpen svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mobileModeToggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-subtle);
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.mobileModeToggle:hover,
+.mobileModeToggle:focus-visible {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-1px);
+}
+
 
 .calendarCluster {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 18px;
 }
 
 .calendarStepper {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 0.95rem;
-  text-transform: capitalize;
+  gap: 8px;
   color: var(--text-primary);
 }
 
@@ -207,44 +315,6 @@
   text-transform: capitalize;
 }
 
-.calendarViewSwitch {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  gap: 4px;
-}
-
-.calendarViewSwitch button {
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-subtle);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-size: 0.78rem;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
-}
-
-.calendarViewSwitch button[data-active] {
-  background: rgba(56, 189, 248, 0.22);
-  color: var(--text-primary);
-}
-
-.calendarViewSwitch button:hover,
-.calendarViewSwitch button:focus-visible {
-  color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.calendarViewSwitch svg {
-  width: 18px;
-  height: 18px;
-}
-
 .appSwitch {
   display: inline-flex;
   align-items: center;
@@ -265,6 +335,10 @@
   transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
 }
 
+.appSwitch a span {
+  display: none;
+}
+
 .appSwitch a[data-active] {
   background: rgba(56, 189, 248, 0.28);
   color: var(--text-primary);
@@ -279,34 +353,6 @@
 .appSwitch svg {
   width: 18px;
   height: 18px;
-}
-
-.notificationsWrapper {
-  position: relative;
-}
-
-.notificationsPopover,
-.notificationsPopoverOpen {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  width: min(360px, calc(100vw - 32px));
-  border-radius: 20px;
-  border: 1px solid var(--surface-border);
-  background: var(--surface-elevated);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
-  transform: translateY(-8px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  z-index: 46;
-  padding: 16px;
-}
-
-.notificationsPopoverOpen {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
 }
 
 .createPopover,
@@ -638,8 +684,18 @@
     padding-inline: 12px;
   }
 
+  .topbarLeft {
+    gap: 8px;
+  }
+
   .topbarCenter {
-    justify-content: flex-start;
+    display: none;
+  }
+
+  .mobileTitle {
+    display: inline-flex;
+    margin-left: 4px;
+    margin-right: auto;
   }
 
   .topbarBrand {
@@ -653,6 +709,44 @@
   .createPopover,
   .createPopoverOpen {
     display: none;
+  }
+
+  .topbarRight {
+    gap: 8px;
+  }
+
+  .viewMenu,
+  .viewMenuOpen {
+    display: none;
+  }
+
+  .appSwitch {
+    display: none;
+  }
+
+  .mobileModeToggle {
+    display: inline-flex;
+  }
+
+  .todayButton {
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--surface-border);
+  }
+
+  .todayText {
+    display: none;
+  }
+
+  .todayBadge {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 0.82rem;
   }
 
   .pillNav {

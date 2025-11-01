@@ -106,7 +106,7 @@ export function MonthlyCalendar({
                   }`}
                   onClick={() => onSelectDate?.(date)}
                 >
-                  <span>{date.getDate()}</span>
+                  <span className={styles.dayNumber}>{date.getDate()}</span>
                   {marker ? <small style={{ backgroundColor: marker.color ?? "var(--accent)" }}>{marker.label}</small> : null}
                 </button>
               );

@@ -58,32 +58,10 @@
 }
 
 .optionActive {
-  border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(14, 165, 233, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
   font-weight: 600;
-}
-
-.colorPreview {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.colorPreview[data-accent="lagoon"] {
-  background: linear-gradient(120deg, #0284c7, #38bdf8);
-}
-
-.colorPreview[data-accent="sunset"] {
-  background: linear-gradient(120deg, #f97316, #f472b6);
-}
-
-.colorPreview[data-accent="forest"] {
-  background: linear-gradient(120deg, #0ea5e9, #22c55e);
-}
-
-.colorPreview[data-accent="midnight"] {
-  background: linear-gradient(120deg, #312e81, #6366f1);
 }
 
 .toggle {

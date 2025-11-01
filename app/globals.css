@@ -15,9 +15,9 @@
   --surface-strong: color-mix(in srgb, var(--fc-surface) 95%, #000 5%);
   --surface-elevated: color-mix(in srgb, var(--fc-surface) 98%, #000 2%);
   --surface-border: rgba(0, 0, 0, 0.35);
-  --accent: #38bdf8;
-  --accent-strong: #0ea5e9;
-  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent: #6366f1;
+  --accent-strong: #4338ca;
+  --accent-soft: rgba(99, 102, 241, 0.18);
   --density-gap: 16px;
   --density-padding: 18px;
   --density-radius: 18px;
@@ -75,7 +75,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.05), transparent 55%),
-    radial-gradient(circle at 80% 12%, rgba(56, 189, 248, 0.08), transparent 60%);
+    radial-gradient(circle at 80% 12%, rgba(99, 102, 241, 0.12), transparent 60%);
   opacity: 0.65;
   z-index: -1;
 }
