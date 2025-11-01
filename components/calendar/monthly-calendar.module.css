@@ -1,6 +1,6 @@
 .calendar,
 .calendarCompact {
-  background: rgba(15, 23, 42, 0.78);
+  background: color-mix(in srgb, rgba(15, 23, 42, 0.78) 86%, var(--accent) 12%);
   border-radius: var(--density-radius);
   border: 1px solid rgba(148, 163, 184, 0.22);
   padding: 16px;

@@ -17,8 +17,8 @@ export default function SettingsPage() {
       <header className={styles.header}>
         <span className={styles.label}>Personnalisation & accès</span>
         <p>
-          La palette d’accentuation est désormais harmonisée pour tout le monde. Ajustez ici la densité,
-          la transparence et les membres de votre foyer.
+          Les teintes indigo sont désormais partagées par l’ensemble du tableau de bord. Ajustez la densité,
+          l’effet de transparence et la composition de votre foyer pour adapter l’expérience à votre quotidien.
         </p>
       </header>
       <section className={styles.grid}>
