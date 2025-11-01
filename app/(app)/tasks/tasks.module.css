@@ -89,7 +89,7 @@
 .listButtonActive small {
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(56, 189, 248, 0.18);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--text-primary);
   font-size: 0.64rem;
   letter-spacing: 0.04em;
@@ -101,7 +101,7 @@
 }
 
 .listButtonActive {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .panelEmpty {
@@ -169,7 +169,7 @@
   gap: 12px;
   width: 100%;
   border-radius: 12px;
-  border: 1px dashed rgba(56, 189, 248, 0.3);
+  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
   background: transparent;
   color: var(--text-muted);
   font-size: 0.86rem;
@@ -181,11 +181,11 @@
 .addTrigger svg {
   width: 22px;
   height: 22px;
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .addTrigger:hover {
-  border-color: rgba(56, 189, 248, 0.6);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   color: var(--text-primary);
   transform: translateY(-1px);
 }
@@ -243,12 +243,12 @@
 }
 
 .toggleButton:hover {
-  color: var(--accent);
+  color: var(--accent-strong);
   transform: translateY(-1px);
 }
 
 .toggleButtonActive {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .addSubmit,
@@ -266,7 +266,7 @@
 
 .addSubmit:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .addSubmitCelebrating {
@@ -545,11 +545,13 @@
 
 .sectionDivider {
   padding: 0;
+  margin-top: auto;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 
 .sectionDivider details {
-  padding: 12px 0;
+  padding: 14px 0 0;
 }
 
 .sectionDivider summary {

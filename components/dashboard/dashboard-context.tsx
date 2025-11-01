@@ -9,7 +9,6 @@ import type { RecurrenceState } from "@/components/tasks/recurrence";
 import { CreateNotificationPayload, DashboardNotification, deriveNotificationsFromData } from "@/lib/notifications";
 
 export type DashboardSettings = {
-  accent: "lagoon" | "sunset" | "forest" | "midnight";
   density: "air" | "balance" | "tight";
   glassEffect: boolean;
 };
@@ -74,29 +73,14 @@ const NOTIFICATIONS_STORAGE_KEY = "family-connect:notifications";
 const NOTIFICATION_STATE_STORAGE_KEY = "family-connect:notification-state";
 
 const DEFAULT_SETTINGS: DashboardSettings = {
-  accent: "lagoon",
   density: "balance",
   glassEffect: true,
 };
 
-const ACCENT_MAP: Record<DashboardSettings["accent"], { solid: string; gradient: string }> = {
-  lagoon: {
-    solid: "#0ea5e9",
-    gradient: "linear-gradient(120deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%)",
-  },
-  sunset: {
-    solid: "#fb7185",
-    gradient: "linear-gradient(120deg, #f97316 0%, #fb7185 55%, #f472b6 100%)",
-  },
-  forest: {
-    solid: "#22c55e",
-    gradient: "linear-gradient(120deg, #0ea5e9 0%, #22c55e 55%, #84cc16 100%)",
-  },
-  midnight: {
-    solid: "#6366f1",
-    gradient: "linear-gradient(120deg, #312e81 0%, #4338ca 45%, #6366f1 100%)",
-  },
-};
+const ACCENT_SOLID = "#6366f1";
+const ACCENT_GRADIENT = "linear-gradient(130deg, #4338ca 0%, #6366f1 55%, #818cf8 100%)";
+const ACCENT_STRONG = "#4338ca";
+const ACCENT_SOFT = "rgba(99, 102, 241, 0.18)";
 
 type NotificationPersistenceState = {
   read: boolean;
@@ -684,9 +668,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [manualNotifications, notificationState, notifications, setManualNotifications, setNotificationState]);
 
   useEffect(() => {
-    const accent = ACCENT_MAP[settings.accent];
-    document.documentElement.style.setProperty("--accent", accent.solid);
-    document.documentElement.style.setProperty("--accent-gradient", accent.gradient);
+    document.documentElement.style.setProperty("--accent", ACCENT_SOLID);
+    document.documentElement.style.setProperty("--accent-gradient", ACCENT_GRADIENT);
+    document.documentElement.style.setProperty("--accent-strong", ACCENT_STRONG);
+    document.documentElement.style.setProperty("--accent-soft", ACCENT_SOFT);
     document.documentElement.style.setProperty(
       "--density-gap",
       settings.density === "tight" ? "8px" : settings.density === "balance" ? "14px" : "20px"
@@ -719,7 +704,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       "--glass-blur",
       settings.glassEffect ? "saturate(180%) blur(26px)" : "none"
     );
-  }, [settings]);
+  }, [settings.density, settings.glassEffect]);
 
   const value = useMemo<DashboardContextValue>(
     () => ({

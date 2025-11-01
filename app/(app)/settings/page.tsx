@@ -3,13 +3,6 @@
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import styles from "./settings.module.css";
 
-const ACCENT_OPTIONS = [
-  { value: "lagoon", label: "Lagune" },
-  { value: "sunset", label: "Coucher de soleil" },
-  { value: "forest", label: "Forêt" },
-  { value: "midnight", label: "Minuit" },
-];
-
 const DENSITY_OPTIONS = [
   { value: "air", label: "Aérée" },
   { value: "balance", label: "Équilibrée" },
@@ -23,26 +16,12 @@ export default function SettingsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <span className={styles.label}>Personnalisation & accès</span>
-        <p>Ajustez les finitions visuelles et gérez les membres de votre foyer en un seul endroit.</p>
+        <p>
+          La palette d’accentuation est désormais harmonisée pour tout le monde. Ajustez ici la densité,
+          la transparence et les membres de votre foyer.
+        </p>
       </header>
       <section className={styles.grid}>
-        <div className={styles.panel}>
-          <h2>Couleur d’accent</h2>
-          <div className={styles.optionGrid}>
-            {ACCENT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => updateSettings({ accent: option.value as typeof settings.accent })}
-                className={settings.accent === option.value ? styles.optionActive : styles.optionButton}
-              >
-                <span className={styles.colorPreview} data-accent={option.value} />
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className={styles.panel}>
           <h2>Densité</h2>
           <div className={styles.optionGrid}>
